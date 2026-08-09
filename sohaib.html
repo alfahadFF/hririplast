@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مصنع صهيب الحريري للصناعات البلاستيكية</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f8fafc; margin: 0; padding-bottom: 250px; }
+        .hero { background: #111; color: white; padding: 0; text-align: center; }
+        .hero-banner { width: 100%; max-height: 250px; object-fit: cover; }
+        .logo-circle { width: 100px; height: 100px; background: white; border-radius: 50%; margin: -50px auto 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #ff9900; }
+        .logo-circle img { width: 80%; }
+        
+        .filter-btns { padding: 20px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .filter-btn { padding: 8px 25px; border-radius: 20px; border: 1px solid #ff9900; background: transparent; color: white; cursor: pointer; transition: 0.3s; }
+        .filter-btn.active { background: #ff9900; }
+
+        .agent-container { max-width: 600px; margin: 10px auto; background: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 15px; border: 1px solid #eee; }
+        .agent-container img { height: 50px; width: auto; object-fit: contain; }
+        
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding: 20px; }
+        .product-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .field-label { font-size: 0.75rem; color: #666; font-weight: bold; margin-bottom: 2px; }
+        select, input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        
+        .price-container { background: #f1f5f9; padding: 10px; border-radius: 6px; margin: 10px 0; text-align: center; }
+        .original-price { text-decoration: line-through; color: #999; font-size: 0.85rem; }
+        .final-price { color: #d32f2f; font-weight: bold; font-size: 1.1rem; }
+        .add-btn { grid-column: span 2; padding: 12px; background: #000; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        
+        .cart-section { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; border-top: 2px solid #000; z-index: 1000; box-shadow: 0 -5px 10px rgba(0,0,0,0.1); }
+        footer { background: #333; color: #fff; padding: 30px 20px; text-align: center; margin-top: 20px; }
+        .footer-link { background: #444; color: #fff; padding: 15px; text-decoration: none; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        @media (max-width: 600px) { .products-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<header class="hero">
+    <img src="https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781003590/HERO_pescid.png" class="hero-banner">
+    <div class="logo-circle"><img src="https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png"></div>
+    <h1>مصنع صهيب الحريري</h1>
+    <div class="filter-btns">
+        <button class="filter-btn active" onclick="filterProducts('الكل', this)">الكل</button>
+        <button class="filter-btn" onclick="filterProducts('PPR', this)">PPR</button>
+        <button class="filter-btn" onclick="filterProducts('PVC', this)">PVC</button>
+        <button class="filter-btn" onclick="filterProducts('كهرباء', this)">كهرباء</button>
+        <button class="filter-btn" onclick="filterProducts('زراعي', this)">زراعي</button>
+        <button class="filter-btn" onclick="filterProducts('نحاسيات', this)">نحاسيات</button>
+    </div>
+</header>
+
+<div class="agent-container">
+    <img src="https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781002883/WP_LOGO_hsx4c1.png">
+    <p>الوكيل الحصري: <strong>شركة أبناء الحاج أبو ياسين الحريري</strong></p>
+</div>
+
+<div class="products-grid" id="products-container"></div>
+
+<div class="cart-section">
+    <div id="total-cart-price" style="font-weight:bold; text-align:center; margin-bottom:5px;">المجموع الكلي: 0.00$</div>
+    <ul id="cart-list" style="margin:0 0 10px; padding:0; font-size:0.8rem; max-height:60px; overflow-y:auto;"></ul>
+    <div style="display:flex; gap:10px; margin-bottom:10px;">
+        <input type="text" id="cust-name" placeholder="الاسم">
+        <input type="text" id="cust-phone" placeholder="الهاتف">
+        <input type="text" id="cust-addr" placeholder="العنوان">
+    </div>
+    <button style="width:100%; padding:12px; background:#25D366; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="sendWhatsApp()">إرسال الطلبية عبر واتساب</button>
+</div>
+
+<footer>
+    <h2 style="color: #ff9900;">تواصل معنا</h2>
+    <div style="max-width:400px; margin:0 auto;">
+        <a href="#" class="footer-link"><span>فيسبوك</span> <span>📘</span></a>
+        <a href="https://wa.me/963941574544" class="footer-link"><span>واتساب</span> <span>🟢</span></a>
+        <a href="tel:00963152827206" class="footer-link">00963152827206 📞</a>
+        <a href="tel:00963941574544" class="footer-link">00963941574544 📞</a>
+        <a href="#" class="footer-link"><span>موقع المعرض</span> <span>📍</span></a>
+    </div>
+</footer>
+
+<script>
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQwFLfWB4sR675G4UUS9AsBfONkYVSxo9FPHnNOtDvvCVfEB1FS8rlID238c1CKm9hROq67t5_qjFdG/pub?gid=94108888&single=true&output=csv';
+    let productData = [], cart = [];
+
+    async function fetchProducts() {
+        const response = await fetch(csvUrl);
+        const data = await response.text();
+        const rows = data.split('\n');
+        let grouped = {};
+        for (let i = 1; i < rows.length; i++) {
+            const row = parseCSVRow(rows[i]);
+            // التعديل: السعر في العمود 5 (index 5) والعمود 8 (index 8) للسعر بعد الحسم
+            if (row.length >= 9 && row[1]) {
+                let originalPrice = row[5] ? parseFloat(row[5].replace('$', '').trim()) : 0;
+                let discountedPrice = row[8] ? parseFloat(row[8].replace('$', '').trim()) : originalPrice;
+
+                if (!grouped[row[1]]) grouped[row[1]] = { name: row[1], type: row[0], image: row[7], variants: [] };
+                grouped[row[1]].variants.push({ size: row[2], thick: row[3], price: originalPrice, finalPrice: discountedPrice });
+            }
+        }
+        productData = Object.values(grouped);
+        renderProducts(productData);
+    }
+
+    function renderProducts(products) {
+        const container = document.getElementById('products-container');
+        container.innerHTML = '';
+        products.forEach((p, pIndex) => {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.innerHTML = `
+                <div style="text-align:center;"><img src="${p.image}" style="height:100px;"><h4>${p.name}</h4></div>
+                <div class="form-grid">
+                    <div><div class="field-label">القياس</div><select id="size-${pIndex}" onchange="updateView(${pIndex})">${[...new Set(p.variants.map(v=>v.size))].map(s=>`<option value="${s}">${s}</option>`).join('')}</select></div>
+                    <div><div class="field-label">العدد</div><input type="number" id="qty-${pIndex}" value="1" min="1" oninput="updateView(${pIndex})"></div>
+                    <div><div class="field-label">السماكة</div><select id="thick-${pIndex}" onchange="updateView(${pIndex})"></select></div>
+                    <div><div class="field-label">السعر المحسوم</div><input type="text" id="total-${pIndex}" readonly></div>
+                </div>
+                <div class="price-container">
+                    <div class="original-price" id="orig-${pIndex}">السعر: 0.00$</div>
+                    <div class="final-price" id="discount-${pIndex}">بعد الحسم: 0.00$</div>
+                </div>
+                <button class="add-btn" onclick="addToCart(${pIndex})">إضافة للسلة</button>
+            `;
+            container.appendChild(card);
+            updateView(pIndex);
+        });
+    }
+
+    function updateView(pIndex) {
+        const p = productData[pIndex];
+        const size = document.getElementById(`size-${pIndex}`).value;
+        const thickSelect = document.getElementById(`thick-${pIndex}`);
+        const qty = document.getElementById(`qty-${pIndex}`).value;
+        const opts = p.variants.filter(v => v.size == size);
+        thickSelect.innerHTML = opts.map(v => `<option value="${v.thick}">${v.thick}</option>`).join('');
+        const match = p.variants.find(v => v.size == size && v.thick == thickSelect.value);
+        if(match) {
+            let totalOrig = match.price * qty;
+            let totalFinal = match.finalPrice * qty;
+            document.getElementById(`orig-${pIndex}`).innerText = "السعر: " + totalOrig.toFixed(2) + "$";
+            document.getElementById(`discount-${pIndex}`).innerText = "بعد الحسم: " + totalFinal.toFixed(2) + "$";
+            document.getElementById(`total-${pIndex}`).value = totalFinal.toFixed(2) + "$";
+        }
+    }
+
+    function addToCart(pIndex) {
+        const p = productData[pIndex];
+        const size = document.getElementById(`size-${pIndex}`).value;
+        const thick = document.getElementById(`thick-${pIndex}`).value;
+        const qty = document.getElementById(`qty-${pIndex}`).value;
+        const match = p.variants.find(v => v.size == size && v.thick == thick);
+        cart.push({ ...match, price: match.finalPrice, name: p.name, qty });
+        updateCartList();
+    }
+
+    function updateCartList() {
+        const list = document.getElementById('cart-list');
+        let total = 0;
+        list.innerHTML = cart.map(i => {
+            let sub = i.price * i.qty;
+            total += sub;
+            return `<li>${i.name} - ${i.qty}× - ${sub.toFixed(2)}$</li>`;
+        }).join('');
+        document.getElementById('total-cart-price').innerText = "المجموع الكلي: " + total.toFixed(2) + "$";
+    }
+
+    function sendWhatsApp() {
+        const n = document.getElementById('cust-name').value, p = document.getElementById('cust-phone').value, a = document.getElementById('cust-addr').value;
+        if(!n || !p || !a) return alert("يرجى تعبئة جميع بيانات العميل");
+        if(cart.length === 0) return alert("السلة فارغة!");
+        let total = 0;
+        let msg = `*طلب جديد من مصنع صهيب الحريري*%0A%0Aالعميل: ${n}%0Aالهاتف: ${p}%0Aالعنوان: ${a}%0A---%0A`;
+        cart.forEach(i => { let sub = i.price * i.qty; total += sub; msg += `• ${i.name} (${i.size}/${i.thick}) - ${i.qty}× - ${sub.toFixed(2)}$%0A`; });
+        msg += `%0A*الإجمالي الكلي: ${total.toFixed(2)}$*`;
+        window.open(`https://wa.me/963941574544?text=${msg}`, '_blank');
+    }
+
+    function filterProducts(type, btn) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        renderProducts(type === 'الكل' ? productData : productData.filter(p => p.type.toUpperCase() === type.toUpperCase()));
+    }
+    function parseCSVRow(str) {
+        let arr = [], quote = false, col = '';
+        for (let i = 0; i < str.length; i++) {
+            if (str[i] == '"') quote = !quote;
+            else if (str[i] == ',' && !quote) { arr.push(col.trim()); col = ''; }
+            else col += str[i];
+        }
+        arr.push(col.trim()); return arr;
+    }
+    window.onload = fetchProducts;
+</script>
+</body>
+</html>
