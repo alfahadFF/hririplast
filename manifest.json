@@ -1,1 +1,25 @@
-
+{
+  "short_name": "مصنع الحريري",
+  "name": "مصنع صهيب الحريري للصناعات البلاستيكية",
+  "icons": [
+    {
+      "src": "https://res.cloudinary.com/dvzg70krq/image/upload/v1786262671/icon-192_jlxxg3.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://res.cloudinary.com/dvzg70krq/image/upload/v1786262682/icon-512_jsgaki.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "background_color": "#f8fafc",
+  "theme_color": "#111111",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "ar",
+  "dir": "rtl"
+}
