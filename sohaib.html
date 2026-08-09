@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مصنع صهيب الحريري للصناعات البلاستيكية</title>
+    
+    <!-- ربط ملف المانيفست للـ PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#111111">
+    
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f8fafc; margin: 0; padding-bottom: 250px; }
         .hero { background: #111; color: white; padding: 0; text-align: center; }
@@ -32,14 +37,15 @@
         .cart-section { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; border-top: 2px solid #000; z-index: 1000; box-shadow: 0 -5px 10px rgba(0,0,0,0.1); }
         footer { background: #333; color: #fff; padding: 30px 20px; text-align: center; margin-top: 20px; }
         .footer-link { background: #444; color: #fff; padding: 15px; text-decoration: none; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .loading-state, .error-state { text-align: center; padding: 40px; font-size: 1.2rem; color: #666; grid-column: 1 / -1; }
         @media (max-width: 600px) { .products-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
 <header class="hero">
-    <img src="https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781003590/HERO_pescid.png" class="hero-banner">
-    <div class="logo-circle"><img src="https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png"></div>
+    <img src="https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781003590/HERO_pescid.png" class="hero-banner" alt="غلاف المصنع">
+    <div class="logo-circle"><img src="https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png" alt="الشعار"></div>
     <h1>مصنع صهيب الحريري</h1>
     <div class="filter-btns">
         <button class="filter-btn active" onclick="filterProducts('الكل', this)">الكل</button>
@@ -52,11 +58,13 @@
 </header>
 
 <div class="agent-container">
-    <img src="https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781002883/WP_LOGO_hsx4c1.png">
+    <img src="https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781002883/WP_LOGO_hsx4c1.png" alt="الوكيل">
     <p>الوكيل الحصري: <strong>شركة أبناء الحاج أبو ياسين الحريري</strong></p>
 </div>
 
-<div class="products-grid" id="products-container"></div>
+<div class="products-grid" id="products-container">
+    <div class="loading-state">جاري تحميل المنتجات...</div>
+</div>
 
 <div class="cart-section">
     <div id="total-cart-price" style="font-weight:bold; text-align:center; margin-bottom:5px;">المجموع الكلي: 0.00$</div>
@@ -81,27 +89,43 @@
 </footer>
 
 <script>
-    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQwFLfWB4sR675G4UUS9AsBfONkYVSxo9FPHnNOtDvvCVfEB1FS8rlID238c1CKm9hROq67t5_qjFdG/pub?gid=94108888&single=true&output=csv';
+    // طلب البيانات من دالة Netlify بدلاً من رابط Google Sheets المباشر
+    const apiEndpoint = '/.netlify/functions/get-products';
     let productData = [], cart = [];
 
     async function fetchProducts() {
-        const response = await fetch(csvUrl);
-        const data = await response.text();
-        const rows = data.split('\n');
-        let grouped = {};
-        for (let i = 1; i < rows.length; i++) {
-            const row = parseCSVRow(rows[i]);
-            // التعديل: السعر في العمود 5 (index 5) والعمود 8 (index 8) للسعر بعد الحسم
-            if (row.length >= 9 && row[1]) {
-                let originalPrice = row[5] ? parseFloat(row[5].replace('$', '').trim()) : 0;
-                let discountedPrice = row[8] ? parseFloat(row[8].replace('$', '').trim()) : originalPrice;
+        const container = document.getElementById('products-container');
+        try {
+            const response = await fetch(apiEndpoint);
+            if (!response.ok) throw new Error('فشل جلب البيانات من الخادم');
+            
+            const data = await response.text();
+            const rows = data.split('\n');
+            let grouped = {};
 
-                if (!grouped[row[1]]) grouped[row[1]] = { name: row[1], type: row[0], image: row[7], variants: [] };
-                grouped[row[1]].variants.push({ size: row[2], thick: row[3], price: originalPrice, finalPrice: discountedPrice });
+            for (let i = 1; i < rows.length; i++) {
+                if (!rows[i].trim()) continue;
+                const row = parseCSVRow(rows[i]);
+                
+                if (row.length >= 9 && row[1]) {
+                    let originalPrice = row[5] ? parseFloat(row[5].replace('$', '').trim()) : 0;
+                    let discountedPrice = row[8] ? parseFloat(row[8].replace('$', '').trim()) : originalPrice;
+
+                    if (!grouped[row[1]]) grouped[row[1]] = { name: row[1], type: row[0], image: row[7], variants: [] };
+                    grouped[row[1]].variants.push({ size: row[2], thick: row[3], price: originalPrice, finalPrice: discountedPrice });
+                }
             }
+            productData = Object.values(grouped);
+            
+            if (productData.length === 0) {
+                container.innerHTML = '<div class="error-state">لا توجد منتجات متاحة حالياً.</div>';
+            } else {
+                renderProducts(productData);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            container.innerHTML = '<div class="error-state">حدث خطأ أثناء تحميل البيانات. يرجى المحاولة لاحقاً.</div>';
         }
-        productData = Object.values(grouped);
-        renderProducts(productData);
     }
 
     function renderProducts(products) {
@@ -111,7 +135,7 @@
             const card = document.createElement('div');
             card.className = 'product-card';
             card.innerHTML = `
-                <div style="text-align:center;"><img src="${p.image}" style="height:100px;"><h4>${p.name}</h4></div>
+                <div style="text-align:center;"><img src="${p.image}" style="height:100px;" alt="${p.name}"><h4>${p.name}</h4></div>
                 <div class="form-grid">
                     <div><div class="field-label">القياس</div><select id="size-${pIndex}" onchange="updateView(${pIndex})">${[...new Set(p.variants.map(v=>v.size))].map(s=>`<option value="${s}">${s}</option>`).join('')}</select></div>
                     <div><div class="field-label">العدد</div><input type="number" id="qty-${pIndex}" value="1" min="1" oninput="updateView(${pIndex})"></div>
@@ -135,8 +159,10 @@
         const thickSelect = document.getElementById(`thick-${pIndex}`);
         const qty = document.getElementById(`qty-${pIndex}`).value;
         const opts = p.variants.filter(v => v.size == size);
+        
         thickSelect.innerHTML = opts.map(v => `<option value="${v.thick}">${v.thick}</option>`).join('');
         const match = p.variants.find(v => v.size == size && v.thick == thickSelect.value);
+        
         if(match) {
             let totalOrig = match.price * qty;
             let totalFinal = match.finalPrice * qty;
@@ -152,6 +178,7 @@
         const thick = document.getElementById(`thick-${pIndex}`).value;
         const qty = document.getElementById(`qty-${pIndex}`).value;
         const match = p.variants.find(v => v.size == size && v.thick == thick);
+        
         cart.push({ ...match, price: match.finalPrice, name: p.name, qty });
         updateCartList();
     }
@@ -183,6 +210,7 @@
         if(btn) btn.classList.add('active');
         renderProducts(type === 'الكل' ? productData : productData.filter(p => p.type.toUpperCase() === type.toUpperCase()));
     }
+
     function parseCSVRow(str) {
         let arr = [], quote = false, col = '';
         for (let i = 0; i < str.length; i++) {
@@ -192,6 +220,7 @@
         }
         arr.push(col.trim()); return arr;
     }
+
     window.onload = fetchProducts;
 </script>
 </body>
