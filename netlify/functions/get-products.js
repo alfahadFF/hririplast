@@ -1,6 +1,14 @@
 exports.handler = async function(event, context) {
-    // رابط جوجل شيت المخفي في جهة السيرفر
-    const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQwFLfWB4sR675G4UUS9AsBfONkYVSxo9FPHnNOtDvvCVfEB1FS8rlID238c1CKm9hROq67t5_qjFdG/pub?gid=94108888&single=true&output=csv';
+    // قراءة رابط الشيت من متغير البيئة المسجل في Netlify
+    const GOOGLE_SHEET_CSV_URL = process.env.GOOGLE_SHEET_CSV_URL;
+
+    // التحقق من وجود المتغير لتجنب الأخطاء
+    if (!GOOGLE_SHEET_CSV_URL) {
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: 'Environment variable GOOGLE_SHEET_CSV_URL is not configured.' })
+        };
+    }
 
     try {
         const response = await fetch(GOOGLE_SHEET_CSV_URL);
@@ -19,7 +27,7 @@ exports.handler = async function(event, context) {
             headers: {
                 'Content-Type': 'text/csv; charset=utf-8',
                 'Access-Control-Allow-Origin': '*',
-                'Cache-Control': 'public, max-age=300, s-maxage=300' // تخزين مؤقت لمدة 5 دقائق لتحسين السرعة
+                'Cache-Control': 'public, max-age=300, s-maxage=300' // تخزين مؤقت لمدة 5 دقائق
             },
             body: csvData
         };
