@@ -9,6 +9,12 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#111111">
     
+    <!-- الوسوم الخاصة بأجهزة Apple لتثبيت الـ PWA بشكل ممتاز -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="مصنع الحريري">
+    <link rel="apple-touch-icon" href="https://res.cloudinary.com/dvzg70krq/image/upload/v1786262671/icon-192_jlxxg3.png">
+    
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f8fafc; margin: 0; padding-bottom: 250px; }
         .hero { background: #111; color: white; padding: 0; text-align: center; }
@@ -38,10 +44,35 @@
         footer { background: #333; color: #fff; padding: 30px 20px; text-align: center; margin-top: 20px; }
         .footer-link { background: #444; color: #fff; padding: 15px; text-decoration: none; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .loading-state, .error-state { text-align: center; padding: 40px; font-size: 1.2rem; color: #666; grid-column: 1 / -1; }
+
+        /* شريط التثبيت الخاص بـ iPhone */
+        .ios-install-banner {
+            display: none;
+            background: #222;
+            color: #fff;
+            padding: 12px 15px;
+            font-size: 0.85rem;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #ff9900;
+            position: relative;
+            z-index: 1100;
+        }
+        .ios-install-banner .text { flex: 1; margin-left: 10px; line-height: 1.4; }
+        .ios-install-banner .close-btn { background: none; border: none; color: #ff9900; font-size: 1.2rem; cursor: pointer; font-weight: bold; }
+
         @media (max-width: 600px) { .products-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
+
+<!-- شريط إرشاد التثبيت على أجهزة آيفون -->
+<div id="ios-banner" class="ios-install-banner">
+    <div class="text">
+        📱 <strong>لتثبيت التطبيق على آيفون:</strong> اضغط زر المشاركة <span style="font-size: 1.1rem;">⎘</span> أسفل المتصفح ثم اختَر <strong>"إضافة إلى الشاشة الرئيسية"</strong>.
+    </div>
+    <button class="close-btn" onclick="closeIosBanner()">✕</button>
+</div>
 
 <header class="hero">
     <img src="https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781003590/HERO_pescid.png" class="hero-banner" alt="غلاف المصنع">
@@ -89,9 +120,25 @@
 </footer>
 
 <script>
-    // طلب البيانات من دالة Netlify بدلاً من رابط Google Sheets المباشر
     const apiEndpoint = '/.netlify/functions/get-products';
     let productData = [], cart = [];
+
+    // التحقق واكتشاف جهاز الآيفون
+    function checkIosBanner() {
+        const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+        const bannerDismissed = localStorage.getItem('iosBannerDismissed');
+
+        // يظهر الشريط فقط إذا كان الجهاز آيفون، والموقع يفتح من المتصفح (ليس كتطبيق مثبت جاهز)، ولم يقم بإغلاقه سابقاً
+        if (isIos && !isStandalone && !bannerDismissed) {
+            document.getElementById('ios-banner').style.display = 'flex';
+        }
+    }
+
+    function closeIosBanner() {
+        document.getElementById('ios-banner').style.display = 'none';
+        localStorage.setItem('iosBannerDismissed', 'true');
+    }
 
     async function fetchProducts() {
         const container = document.getElementById('products-container');
@@ -221,7 +268,10 @@
         arr.push(col.trim()); return arr;
     }
 
-    window.onload = fetchProducts;
+    window.onload = () => {
+        checkIosBanner();
+        fetchProducts();
+    };
 </script>
 </body>
 </html>
