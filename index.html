@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>مصنع صهيب الحريري للصناعات البلاستيكية | Hririplast</title>
     
     <!-- PWA & Apple Meta -->
@@ -14,64 +14,137 @@
     <link rel="apple-touch-icon" href="https://res.cloudinary.com/dvzg70krq/image/upload/v1786262671/icon-192_jlxxg3.png">
     
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f8fafc; margin: 0; padding-bottom: 250px; }
-        .hero { background: #111; color: white; padding: 0; text-align: center; }
-        .hero-banner { width: 100%; max-height: 250px; object-fit: cover; }
-        .logo-circle { width: 100px; height: 100px; background: white; border-radius: 50%; margin: -50px auto 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #ff9900; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: #f4f6f8; padding-bottom: 230px; }
+        .hero { background: #111; color: white; text-align: center; }
+        .hero-banner { width: 100%; max-height: 200px; object-fit: cover; }
+        .logo-circle { width: 85px; height: 85px; background: white; border-radius: 50%; margin: -42px auto 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #ff9900; }
         .logo-circle img { width: 80%; }
         
-        .filter-btns { padding: 20px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-        .filter-btn { padding: 8px 25px; border-radius: 20px; border: 1px solid #ff9900; background: transparent; color: white; cursor: pointer; transition: 0.3s; }
+        /* شريط البحث */
+        .search-container { max-width: 600px; margin: 12px auto 5px; padding: 0 10px; }
+        .search-box {
+            width: 100%; padding: 10px 15px; border-radius: 25px; border: 1px solid #cbd5e1;
+            font-size: 0.9rem; outline: none; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+        .search-box:focus { border-color: #ff9900; }
+
+        .filter-btns { padding: 10px; display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
+        .filter-btn { padding: 6px 16px; border-radius: 20px; border: 1px solid #ff9900; background: transparent; color: white; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
         .filter-btn.active { background: #ff9900; color: #000; font-weight: bold; }
 
-        .agent-container { max-width: 600px; margin: 10px auto; background: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 15px; border: 1px solid #eee; }
-        .agent-container img { height: 50px; width: auto; object-fit: contain; }
+        .agent-container { max-width: 600px; margin: 5px auto 10px; background: white; padding: 8px 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 10px; border: 1px solid #eee; font-size: 0.85rem; }
+        .agent-container img { height: 35px; width: auto; object-fit: contain; }
         
-        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding: 20px; }
-        .product-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .field-label { font-size: 0.75rem; color: #666; font-weight: bold; margin-bottom: 2px; }
-        select, input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
-        
-        .price-container { background: #f1f5f9; padding: 10px; border-radius: 6px; margin: 10px 0; text-align: center; }
-        .original-price { text-decoration: line-through; color: #999; font-size: 0.85rem; }
-        .final-price { color: #d32f2f; font-weight: bold; font-size: 1.1rem; }
-        
-        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: bold; margin-top: 6px; }
+        /* شبكة بطاقتين متجانبتين للموبايل */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 10px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .product-card {
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .product-card img {
+            width: 100%;
+            height: 90px;
+            object-fit: contain;
+            background: #fafafa;
+            border-radius: 6px;
+            margin-bottom: 6px;
+        }
+
+        .product-title {
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 4px;
+            color: #222;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.2;
+        }
+
+        .field-group { margin-bottom: 6px; }
+        .field-label { font-size: 0.65rem; color: #777; font-weight: bold; margin-bottom: 2px; }
+        select, input {
+            width: 100%;
+            padding: 5px 6px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            background: #fff;
+            outline: none;
+        }
+
+        .price-container {
+            background: #f8fafc;
+            padding: 6px;
+            border-radius: 6px;
+            margin: 6px 0;
+            text-align: center;
+            border: 1px dashed #e2e8f0;
+        }
+        .original-price { text-decoration: line-through; color: #999; font-size: 0.68rem; }
+        .final-price { color: #d32f2f; font-weight: bold; font-size: 0.85rem; }
+
+        .status-badge { display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 0.65rem; font-weight: bold; }
         .status-available { background: #e8f5e9; color: #2e7d32; }
         .status-unavailable { background: #ffebee; color: #c62828; }
 
-        .add-btn { grid-column: span 2; padding: 12px; background: #000; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .add-btn:disabled { background: #94a3b8; cursor: not-allowed; opacity: 0.7; }
-        
-        .cart-section { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; border-top: 2px solid #000; z-index: 1000; box-shadow: 0 -5px 10px rgba(0,0,0,0.1); }
-        footer { background: #333; color: #fff; padding: 30px 20px; text-align: center; margin-top: 20px; }
-        .footer-link { background: #444; color: #fff; padding: 15px; text-decoration: none; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .loading-state, .error-state { text-align: center; padding: 40px; font-size: 1.2rem; color: #666; grid-column: 1 / -1; }
-
-        .ios-install-banner {
-            display: none; background: #222; color: #fff; padding: 12px 15px; font-size: 0.85rem;
-            align-items: center; justify-content: space-between; border-bottom: 2px solid #ff9900; position: relative; z-index: 1100;
+        .add-btn {
+            width: 100%;
+            padding: 7px;
+            background: #111;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: bold;
+            transition: 0.2s;
         }
-        .ios-install-banner .text { flex: 1; margin-left: 10px; line-height: 1.4; }
-        .ios-install-banner .close-btn { background: none; border: none; color: #ff9900; font-size: 1.2rem; cursor: pointer; font-weight: bold; }
+        .add-btn:disabled { background: #94a3b8; cursor: not-allowed; }
 
-        @media (max-width: 600px) { .products-grid { grid-template-columns: 1fr; } }
+        .cart-section {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white; padding: 10px 15px;
+            border-top: 2px solid #000; z-index: 1000;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+        }
+        .cart-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+        
+        footer { background: #222; color: #fff; padding: 25px 15px; text-align: center; margin-top: 20px; font-size: 0.85rem; }
+        .footer-link { background: #333; color: #fff; padding: 10px 15px; text-decoration: none; border-radius: 6px; display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .loading-state, .error-state { text-align: center; padding: 30px; font-size: 1rem; color: #666; grid-column: span 2; }
     </style>
 </head>
 <body>
 
-<div id="ios-banner" class="ios-install-banner">
-    <div class="text">
-        📱 <strong>لتثبيت التطبيق على آيفون:</strong> اضغط زر المشاركة <span style="font-size: 1.1rem;">⎘</span> أسفل المتصفح ثم اختَر <strong>"إضافة إلى الشاشة الرئيسية"</strong>.
-    </div>
-    <button class="close-btn" onclick="closeIosBanner()">✕</button>
-</div>
-
 <header class="hero">
     <img src="https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781003590/HERO_pescid.png" class="hero-banner" alt="غلاف المصنع">
     <div class="logo-circle"><img src="https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png" alt="الشعار"></div>
-    <h1>مصنع صهيب الحريري</h1>
+    <h2 style="font-size: 1.1rem; margin-bottom: 5px;">مصنع صهيب الحريري</h2>
+    
+    <!-- شريط البحث -->
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث عن صنف، قياس، أو كود..." oninput="onSearchInput()">
+    </div>
+
     <div class="filter-btns">
         <button class="filter-btn active" onclick="filterProducts('الكل', this)">الكل</button>
         <button class="filter-btn" onclick="filterProducts('PPR', this)">PPR</button>
@@ -92,24 +165,21 @@
 </div>
 
 <div class="cart-section">
-    <div id="total-cart-price" style="font-weight:bold; text-align:center; margin-bottom:5px;">المجموع الكلي: 0.000$</div>
-    <ul id="cart-list" style="margin:0 0 10px; padding:0; font-size:0.8rem; max-height:60px; overflow-y:auto;"></ul>
-    <div style="display:flex; gap:10px; margin-bottom:10px;">
+    <div id="total-cart-price" style="font-weight:bold; text-align:center; font-size:0.9rem; margin-bottom:4px;">المجموع: 0.000$</div>
+    <ul id="cart-list" style="margin:0 0 6px; padding:0; font-size:0.75rem; max-height:45px; overflow-y:auto;"></ul>
+    <div class="cart-inputs">
         <input type="text" id="cust-name" placeholder="الاسم">
         <input type="text" id="cust-phone" placeholder="الهاتف">
         <input type="text" id="cust-addr" placeholder="العنوان">
     </div>
-    <button style="width:100%; padding:12px; background:#25D366; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="sendWhatsApp()">إرسال الطلبية عبر واتساب</button>
+    <button style="width:100%; padding:10px; background:#25D366; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="sendWhatsApp()">إرسال الطلبية عبر واتساب</button>
 </div>
 
 <footer>
-    <h2 style="color: #ff9900;">تواصل معنا</h2>
-    <div style="max-width:400px; margin:0 auto;">
-        <a href="#" class="footer-link"><span>فيسبوك</span> <span>📘</span></a>
+    <h3 style="color: #ff9900; margin-bottom:12px;">تواصل معنا</h3>
+    <div style="max-width:350px; margin:0 auto;">
         <a href="https://wa.me/963941574544" class="footer-link"><span>واتساب</span> <span>🟢</span></a>
         <a href="tel:00963152827206" class="footer-link">00963152827206 📞</a>
-        <a href="tel:00963941574544" class="footer-link">00963941574544 📞</a>
-        <a href="#" class="footer-link"><span>موقع المعرض</span> <span>📍</span></a>
     </div>
 </footer>
 
@@ -117,20 +187,7 @@
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz7O5VbKtGpuZg1CQu4I2O4XSOD7khH3klzFRZtoHAXheIyWQVtpDHUEpDKlnrZXDpvzg/exec";
     let productData = [], cart = [];
     let currentFilter = 'الكل';
-
-    function checkIosBanner() {
-        const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-        const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-        const bannerDismissed = localStorage.getItem('iosBannerDismissed');
-        if (isIos && !isStandalone && !bannerDismissed) {
-            document.getElementById('ios-banner').style.display = 'flex';
-        }
-    }
-
-    function closeIosBanner() {
-        document.getElementById('ios-banner').style.display = 'none';
-        localStorage.setItem('iosBannerDismissed', 'true');
-    }
+    let searchQuery = '';
 
     function cleanNum(val) {
         if (!val) return 0;
@@ -147,8 +204,6 @@
         const container = document.getElementById('products-container');
         try {
             const response = await fetch(`${SCRIPT_URL}?action=getProducts`);
-            if (!response.ok) throw new Error('فشل جلب البيانات من السيرفر');
-            
             const resData = await response.json();
             const rawProducts = resData.data || [];
             
@@ -165,7 +220,6 @@
                         variants: []
                     };
                 }
-                
                 if (!grouped[key].image && item.img) {
                     grouped[key].image = item.img;
                 }
@@ -187,16 +241,39 @@
             });
 
             productData = Object.values(grouped);
-            
-            if (productData.length === 0) {
-                container.innerHTML = '<div class="error-state">لا توجد منتجات متاحة حالياً.</div>';
-            } else {
-                renderProducts(productData);
-            }
+            applyFilterAndRender();
         } catch (error) {
-            console.error('Error:', error);
-            container.innerHTML = '<div class="error-state">حدث خطأ أثناء تحميل البيانات. يرجى المحاولة لاحقاً.</div>';
+            container.innerHTML = '<div class="error-state">حدث خطأ أثناء تحميل البيانات.</div>';
         }
+    }
+
+    function getFilteredList() {
+        return productData.filter(p => {
+            const matchFilter = (currentFilter === 'الكل') || (String(p.type || '').trim().toUpperCase() === currentFilter.trim().toUpperCase());
+            const query = searchQuery.trim().toLowerCase();
+            if (!query) return matchFilter;
+            
+            const matchName = p.name.toLowerCase().includes(query);
+            const matchVariant = p.variants.some(v => v.size.toLowerCase().includes(query) || v.id.toLowerCase().includes(query));
+            return matchFilter && (matchName || matchVariant);
+        });
+    }
+
+    function applyFilterAndRender() {
+        const list = getFilteredList();
+        renderProducts(list);
+    }
+
+    function onSearchInput() {
+        searchQuery = document.getElementById('searchInput').value;
+        applyFilterAndRender();
+    }
+
+    function filterProducts(type, btn) {
+        currentFilter = type;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        applyFilterAndRender();
     }
 
     function renderProducts(products) {
@@ -204,7 +281,7 @@
         container.innerHTML = '';
         
         if (products.length === 0) {
-            container.innerHTML = '<div class="error-state">لا توجد منتجات مطابقة لهذا القسم.</div>';
+            container.innerHTML = '<div class="error-state">لا توجد أصناف مطابقة.</div>';
             return;
         }
 
@@ -214,36 +291,36 @@
             const card = document.createElement('div');
             card.className = 'product-card';
             card.innerHTML = `
-                <div style="text-align:center;">
-                    <img id="img-${pIndex}" src="${p.image || 'https://via.placeholder.com/150'}" style="height:110px; max-width:100%; object-fit:contain;" alt="${escapeHtml(p.name)}">
-                    <h4 style="margin:8px 0 2px;">${escapeHtml(p.name)}</h4>
-                    <div id="status-${pIndex}"></div>
-                </div>
-                <div class="form-grid">
-                    <div>
+                <div>
+                    <img id="img-${pIndex}" src="${p.image || 'https://via.placeholder.com/150'}" alt="${escapeHtml(p.name)}">
+                    <div class="product-title">${escapeHtml(p.name)}</div>
+                    <div style="text-align:center; margin-bottom:4px;" id="status-${pIndex}"></div>
+
+                    <div class="field-group">
                         <div class="field-label">القياس</div>
                         <select id="size-${pIndex}" onchange="populateThickDropdown(${pIndex})">
                             ${uniqueSizes.map(s => `<option value="${escapeHtml(s)}">${s}</option>`).join('')}
                         </select>
                     </div>
-                    <div>
-                        <div class="field-label">العدد</div>
-                        <input type="number" id="qty-${pIndex}" value="1" min="1" oninput="updatePrice(${pIndex})">
-                    </div>
-                    <div>
+
+                    <div class="field-group">
                         <div class="field-label">السماكة / الوحدة</div>
                         <select id="thick-${pIndex}" onchange="updatePrice(${pIndex})"></select>
                     </div>
-                    <div>
-                        <div class="field-label">السعر بعد الحسم</div>
-                        <input type="text" id="total-${pIndex}" readonly style="font-weight:bold; color:#d32f2f;">
+
+                    <div class="field-group">
+                        <div class="field-label">الكمية</div>
+                        <input type="number" id="qty-${pIndex}" value="1" min="1" oninput="updatePrice(${pIndex})">
                     </div>
                 </div>
-                <div class="price-container">
-                    <div class="original-price" id="orig-${pIndex}">السعر: 0.000$</div>
-                    <div class="final-price" id="discount-${pIndex}">بعد الحسم: 0.000$</div>
+
+                <div>
+                    <div class="price-container">
+                        <div class="original-price" id="orig-${pIndex}">0.000$</div>
+                        <div class="final-price" id="discount-${pIndex}">0.000$</div>
+                    </div>
+                    <button class="add-btn" id="addBtn-${pIndex}" onclick="addToCart(${pIndex})">+ إضافة</button>
                 </div>
-                <button class="add-btn" id="addBtn-${pIndex}" onclick="addToCart(${pIndex})">إضافة للسلة</button>
             `;
             container.appendChild(card);
             populateThickDropdown(pIndex);
@@ -251,7 +328,8 @@
     }
 
     function populateThickDropdown(pIndex) {
-        const p = (currentFilter === 'الكل') ? productData[pIndex] : filteredData()[pIndex];
+        const list = getFilteredList();
+        const p = list[pIndex];
         if (!p) return;
 
         const sizeSelect = document.getElementById(`size-${pIndex}`);
@@ -264,12 +342,7 @@
         matchingVariants.forEach((v, vIdx) => {
             const opt = document.createElement('option');
             opt.value = v.id || vIdx;
-            let thickText = '';
-            if (v.thick && v.unit) thickText = `${v.thick} ${v.unit}`;
-            else if (v.thick) thickText = `${v.thick}`;
-            else if (v.unit) thickText = `${v.unit}`;
-            else thickText = 'قياسي';
-            
+            let thickText = (v.thick && v.unit) ? `${v.thick} ${v.unit}` : (v.thick || v.unit || 'قياسي');
             opt.textContent = thickText;
             thickSelect.appendChild(opt);
         });
@@ -278,7 +351,8 @@
     }
 
     function updatePrice(pIndex) {
-        const p = (currentFilter === 'الكل') ? productData[pIndex] : filteredData()[pIndex];
+        const list = getFilteredList();
+        const p = list[pIndex];
         if (!p) return;
 
         const sizeVal = String(document.getElementById(`size-${pIndex}`).value || '').trim();
@@ -299,27 +373,27 @@
         const totalOrig = match.price * qty;
         const totalFinal = match.finalPrice * qty;
 
-        document.getElementById(`orig-${pIndex}`).innerText = `السعر الأساسي: ${totalOrig.toFixed(3)}$`;
-        document.getElementById(`discount-${pIndex}`).innerText = `بعد الحسم: ${totalFinal.toFixed(3)}$`;
-        document.getElementById(`total-${pIndex}`).value = `${totalFinal.toFixed(3)}$`;
+        document.getElementById(`orig-${pIndex}`).innerText = `${totalOrig.toFixed(3)}$`;
+        document.getElementById(`discount-${pIndex}`).innerText = `${totalFinal.toFixed(3)}$`;
 
         const statusContainer = document.getElementById(`status-${pIndex}`);
         const addBtn = document.getElementById(`addBtn-${pIndex}`);
         const isAvailable = (String(match.available).trim() !== 'غير متوفر');
 
         if (isAvailable) {
-            statusContainer.innerHTML = '<span class="status-badge status-available">● متوفر</span>';
+            statusContainer.innerHTML = '<span class="status-badge status-available">متوفر</span>';
             addBtn.disabled = false;
-            addBtn.innerText = "إضافة للسلة";
+            addBtn.innerText = "+ إضافة";
         } else {
-            statusContainer.innerHTML = '<span class="status-badge status-unavailable">✕ غير متوفر حالياً</span>';
+            statusContainer.innerHTML = '<span class="status-badge status-unavailable">غير متوفر</span>';
             addBtn.disabled = true;
-            addBtn.innerText = "الصنف غير متوفر";
+            addBtn.innerText = "غير متوفر";
         }
     }
 
     function addToCart(pIndex) {
-        const p = (currentFilter === 'الكل') ? productData[pIndex] : filteredData()[pIndex];
+        const list = getFilteredList();
+        const p = list[pIndex];
         if (!p) return;
 
         const variantId = document.getElementById(`thick-${pIndex}`).value;
@@ -338,15 +412,10 @@
         list.innerHTML = cart.map(i => {
             let sub = i.finalPrice * i.qty;
             total += sub;
-            let detailParts = [];
-            if (i.size) detailParts.push(i.size);
-            if (i.thick) detailParts.push(`${i.thick} ${i.unit || ''}`.trim());
-            else if (i.unit) detailParts.push(i.unit);
-            
-            const detailStr = detailParts.length ? ` (${detailParts.join(' - ')})` : '';
-            return `<li>${escapeHtml(i.name)}${detailStr} - ${i.qty}× - ${sub.toFixed(3)}$</li>`;
+            const spec = i.thick ? ` (${i.size} - ${i.thick} ${i.unit})` : ` (${i.size})`;
+            return `<li>${escapeHtml(i.name)}${spec} - ${i.qty}× - ${sub.toFixed(3)}$</li>`;
         }).join('');
-        document.getElementById('total-cart-price').innerText = `المجموع الكلي: ${total.toFixed(3)}$`;
+        document.getElementById('total-cart-price').innerText = `المجموع: ${total.toFixed(3)}$`;
     }
 
     function sendWhatsApp() {
@@ -363,27 +432,13 @@
             let sub = i.finalPrice * i.qty; 
             total += sub; 
             let spec = i.thick ? `${i.thick} ${i.unit || ''}`.trim() : (i.unit || '');
-            let specStr = spec ? ` / ${spec}` : '';
-            msg += `• ${i.name} (${i.size}${specStr}) - ${i.qty}× - ${sub.toFixed(3)}$%0A`; 
+            msg += `• ${i.name} (${i.size}${spec ? ' / ' + spec : ''}) - ${i.qty}× - ${sub.toFixed(3)}$%0A`; 
         });
         msg += `%0A*الإجمالي الكلي: ${total.toFixed(3)}$*`;
         window.open(`https://wa.me/963941574544?text=${msg}`, '_blank');
     }
 
-    function filteredData() {
-        if (currentFilter === 'الكل') return productData;
-        return productData.filter(p => String(p.type || '').trim().toUpperCase() === currentFilter.trim().toUpperCase());
-    }
-
-    function filterProducts(type, btn) {
-        currentFilter = type;
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        if(btn) btn.classList.add('active');
-        renderProducts(filteredData());
-    }
-
     window.onload = () => {
-        checkIosBanner();
         fetchProducts();
     };
 </script>
