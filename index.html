@@ -36,7 +36,7 @@
         .agent-container { max-width: 600px; margin: 5px auto 10px; background: white; padding: 8px 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 10px; border: 1px solid #eee; font-size: 0.85rem; }
         .agent-container img { height: 35px; width: auto; object-fit: contain; }
         
-        /* شبكة بطاقتين متجانبتين للموبايل */
+        /* شبكة بطاقتين متجانبتين */
         .products-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -91,6 +91,7 @@
             outline: none;
         }
 
+        /* تنسيق الأسعار المحدث */
         .price-container {
             background: #f8fafc;
             padding: 6px;
@@ -98,9 +99,32 @@
             margin: 6px 0;
             text-align: center;
             border: 1px dashed #e2e8f0;
+            min-height: 42px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
-        .original-price { text-decoration: line-through; color: #999; font-size: 0.68rem; }
-        .final-price { color: #d32f2f; font-weight: bold; font-size: 0.85rem; }
+        
+        .original-price {
+            text-decoration: line-through;
+            color: #ef4444;
+            font-size: 0.72rem;
+            line-height: 1.2;
+            font-weight: 600;
+        }
+
+        .final-price {
+            color: #15803d; /* أخضر غامق واضح */
+            font-weight: 800;
+            font-size: 0.95rem;
+            line-height: 1.2;
+        }
+
+        .final-price.no-discount {
+            color: #1e293b; /* لون داكن قياسي في حال عدم وجود حسم */
+            font-size: 0.9rem;
+        }
 
         .status-badge { display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 0.65rem; font-weight: bold; }
         .status-available { background: #e8f5e9; color: #2e7d32; }
@@ -140,7 +164,6 @@
     <div class="logo-circle"><img src="https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png" alt="الشعار"></div>
     <h2 style="font-size: 1.1rem; margin-bottom: 5px;">مصنع صهيب الحريري</h2>
     
-    <!-- شريط البحث -->
     <div class="search-container">
         <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث عن صنف، قياس، أو كود..." oninput="onSearchInput()">
     </div>
@@ -260,8 +283,7 @@
     }
 
     function applyFilterAndRender() {
-        const list = getFilteredList();
-        renderProducts(list);
+        renderProducts(getFilteredList());
     }
 
     function onSearchInput() {
@@ -316,7 +338,7 @@
 
                 <div>
                     <div class="price-container">
-                        <div class="original-price" id="orig-${pIndex}">0.000$</div>
+                        <div class="original-price" id="orig-${pIndex}"></div>
                         <div class="final-price" id="discount-${pIndex}">0.000$</div>
                     </div>
                     <button class="add-btn" id="addBtn-${pIndex}" onclick="addToCart(${pIndex})">+ إضافة</button>
@@ -373,8 +395,20 @@
         const totalOrig = match.price * qty;
         const totalFinal = match.finalPrice * qty;
 
-        document.getElementById(`orig-${pIndex}`).innerText = `${totalOrig.toFixed(3)}$`;
-        document.getElementById(`discount-${pIndex}`).innerText = `${totalFinal.toFixed(3)}$`;
+        const origElem = document.getElementById(`orig-${pIndex}`);
+        const finalElem = document.getElementById(`discount-${pIndex}`);
+
+        // منطق التمييز الذكي للخصم
+        if (totalOrig > totalFinal) {
+            origElem.style.display = 'block';
+            origElem.innerText = `${totalOrig.toFixed(3)}$`;
+            finalElem.innerText = `${totalFinal.toFixed(3)}$`;
+            finalElem.className = 'final-price';
+        } else {
+            origElem.style.display = 'none'; // إخفاء السعر المشطوب إذا لم يكن هناك خصم
+            finalElem.innerText = `${totalFinal.toFixed(3)}$`;
+            finalElem.className = 'final-price no-discount';
+        }
 
         const statusContainer = document.getElementById(`status-${pIndex}`);
         const addBtn = document.getElementById(`addBtn-${pIndex}`);
