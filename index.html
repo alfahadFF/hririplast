@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مصنع صهيب الحريري للصناعات البلاستيكية</title>
+    <title>مصنع صهيب الحريري للصناعات البلاستيكية | Hririplast</title>
     
     <!-- PWA & Apple Meta -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#111111">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="مصنع الحريري">
+    <meta name="apple-mobile-web-app-title" content="Hririplast">
     <link rel="apple-touch-icon" href="https://res.cloudinary.com/dvzg70krq/image/upload/v1786262671/icon-192_jlxxg3.png">
     
     <style>
@@ -22,7 +22,7 @@
         
         .filter-btns { padding: 20px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
         .filter-btn { padding: 8px 25px; border-radius: 20px; border: 1px solid #ff9900; background: transparent; color: white; cursor: pointer; transition: 0.3s; }
-        .filter-btn.active { background: #ff9900; }
+        .filter-btn.active { background: #ff9900; color: #000; font-weight: bold; }
 
         .agent-container { max-width: 600px; margin: 10px auto; background: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 15px; border: 1px solid #eee; }
         .agent-container img { height: 50px; width: auto; object-fit: contain; }
@@ -116,6 +116,7 @@
 <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz7O5VbKtGpuZg1CQu4I2O4XSOD7khH3klzFRZtoHAXheIyWQVtpDHUEpDKlnrZXDpvzg/exec";
     let productData = [], cart = [];
+    let currentFilter = 'الكل';
 
     function checkIosBanner() {
         const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -153,23 +154,35 @@
             
             let grouped = {};
             rawProducts.forEach(item => {
+                if (!item.name || !item.id) return;
                 const key = `${item.type}_${item.name}`.trim();
+                
                 if (!grouped[key]) {
                     grouped[key] = {
                         name: item.name,
                         type: item.type,
-                        image: item.img,
+                        image: item.img || '',
                         variants: []
                     };
                 }
+                
+                if (!grouped[key].image && item.img) {
+                    grouped[key].image = item.img;
+                }
+
+                const basePrice = cleanNum(item.price);
+                const discountP = cleanNum(item.discountPrice);
+                const finalP = discountP > 0 ? discountP : basePrice;
+
                 grouped[key].variants.push({
-                    id: String(item.id || ''),
+                    id: String(item.id || '').trim(),
                     size: String(item.size || '').trim(),
                     thick: String(item.thick || '').trim(),
                     unit: String(item.unit || '').trim(),
-                    price: cleanNum(item.price),
-                    finalPrice: cleanNum(item.discountPrice) || cleanNum(item.price),
-                    available: String(item.available || 'متوفر').trim()
+                    price: basePrice,
+                    finalPrice: finalP,
+                    available: String(item.available || 'متوفر').trim(),
+                    image: item.img || grouped[key].image || ''
                 });
             });
 
@@ -190,14 +203,19 @@
         const container = document.getElementById('products-container');
         container.innerHTML = '';
         
+        if (products.length === 0) {
+            container.innerHTML = '<div class="error-state">لا توجد منتجات مطابقة لهذا القسم.</div>';
+            return;
+        }
+
         products.forEach((p, pIndex) => {
-            const uniqueSizes = [...new Set(p.variants.map(v => String(v.size || '').trim()))];
+            const uniqueSizes = [...new Set(p.variants.map(v => String(v.size || '').trim()))].filter(s => s !== '');
             
             const card = document.createElement('div');
             card.className = 'product-card';
             card.innerHTML = `
                 <div style="text-align:center;">
-                    <img src="${p.image || 'https://via.placeholder.com/150'}" style="height:100px; max-width:100%; object-fit:contain;" alt="${escapeHtml(p.name)}">
+                    <img id="img-${pIndex}" src="${p.image || 'https://via.placeholder.com/150'}" style="height:110px; max-width:100%; object-fit:contain;" alt="${escapeHtml(p.name)}">
                     <h4 style="margin:8px 0 2px;">${escapeHtml(p.name)}</h4>
                     <div id="status-${pIndex}"></div>
                 </div>
@@ -213,12 +231,12 @@
                         <input type="number" id="qty-${pIndex}" value="1" min="1" oninput="updatePrice(${pIndex})">
                     </div>
                     <div>
-                        <div class="field-label">السماكة</div>
+                        <div class="field-label">السماكة / الوحدة</div>
                         <select id="thick-${pIndex}" onchange="updatePrice(${pIndex})"></select>
                     </div>
                     <div>
-                        <div class="field-label">السعر المحسوم</div>
-                        <input type="text" id="total-${pIndex}" readonly>
+                        <div class="field-label">السعر بعد الحسم</div>
+                        <input type="text" id="total-${pIndex}" readonly style="font-weight:bold; color:#d32f2f;">
                     </div>
                 </div>
                 <div class="price-container">
@@ -233,7 +251,9 @@
     }
 
     function populateThickDropdown(pIndex) {
-        const p = productData[pIndex];
+        const p = (currentFilter === 'الكل') ? productData[pIndex] : filteredData()[pIndex];
+        if (!p) return;
+
         const sizeSelect = document.getElementById(`size-${pIndex}`);
         const thickSelect = document.getElementById(`thick-${pIndex}`);
         const selectedSize = String(sizeSelect.value || '').trim();
@@ -244,7 +264,12 @@
         matchingVariants.forEach((v, vIdx) => {
             const opt = document.createElement('option');
             opt.value = v.id || vIdx;
-            const thickText = v.thick ? `${v.thick} ${v.unit || ''}`.trim() : (v.unit ? v.unit : 'قياسي');
+            let thickText = '';
+            if (v.thick && v.unit) thickText = `${v.thick} ${v.unit}`;
+            else if (v.thick) thickText = `${v.thick}`;
+            else if (v.unit) thickText = `${v.unit}`;
+            else thickText = 'قياسي';
+            
             opt.textContent = thickText;
             thickSelect.appendChild(opt);
         });
@@ -253,7 +278,9 @@
     }
 
     function updatePrice(pIndex) {
-        const p = productData[pIndex];
+        const p = (currentFilter === 'الكل') ? productData[pIndex] : filteredData()[pIndex];
+        if (!p) return;
+
         const sizeVal = String(document.getElementById(`size-${pIndex}`).value || '').trim();
         const thickSelect = document.getElementById(`thick-${pIndex}`);
         const selectedVariantId = thickSelect.value;
@@ -265,10 +292,14 @@
         }
         if (!match) return;
 
+        if (match.image) {
+            document.getElementById(`img-${pIndex}`).src = match.image;
+        }
+
         const totalOrig = match.price * qty;
         const totalFinal = match.finalPrice * qty;
 
-        document.getElementById(`orig-${pIndex}`).innerText = `السعر: ${totalOrig.toFixed(3)}$`;
+        document.getElementById(`orig-${pIndex}`).innerText = `السعر الأساسي: ${totalOrig.toFixed(3)}$`;
         document.getElementById(`discount-${pIndex}`).innerText = `بعد الحسم: ${totalFinal.toFixed(3)}$`;
         document.getElementById(`total-${pIndex}`).value = `${totalFinal.toFixed(3)}$`;
 
@@ -288,7 +319,9 @@
     }
 
     function addToCart(pIndex) {
-        const p = productData[pIndex];
+        const p = (currentFilter === 'الكل') ? productData[pIndex] : filteredData()[pIndex];
+        if (!p) return;
+
         const variantId = document.getElementById(`thick-${pIndex}`).value;
         const qty = Math.max(1, parseInt(document.getElementById(`qty-${pIndex}`).value) || 1);
         const match = p.variants.find(v => String(v.id) === String(variantId)) || p.variants[0];
@@ -305,8 +338,13 @@
         list.innerHTML = cart.map(i => {
             let sub = i.finalPrice * i.qty;
             total += sub;
-            const detail = i.thick ? ` (${i.size} - ${i.thick} ${i.unit})` : ` (${i.size})`;
-            return `<li>${i.name}${detail} - ${i.qty}× - ${sub.toFixed(3)}$</li>`;
+            let detailParts = [];
+            if (i.size) detailParts.push(i.size);
+            if (i.thick) detailParts.push(`${i.thick} ${i.unit || ''}`.trim());
+            else if (i.unit) detailParts.push(i.unit);
+            
+            const detailStr = detailParts.length ? ` (${detailParts.join(' - ')})` : '';
+            return `<li>${escapeHtml(i.name)}${detailStr} - ${i.qty}× - ${sub.toFixed(3)}$</li>`;
         }).join('');
         document.getElementById('total-cart-price').innerText = `المجموع الكلي: ${total.toFixed(3)}$`;
     }
@@ -320,20 +358,28 @@
         if(cart.length === 0) return alert("السلة فارغة!");
         
         let total = 0;
-        let msg = `*طلب جديد من مصنع صهيب الحريري*%0A%0Aالعميل: ${n}%0Aالهاتف: ${p}%0Aالعنوان: ${a}%0A---%0A`;
+        let msg = `*طلب جديد من مصنع صهيب الحريري (Hririplast)*%0A%0Aالعميل: ${n}%0Aالهاتف: ${p}%0Aالعنوان: ${a}%0A---%0A`;
         cart.forEach(i => { 
             let sub = i.finalPrice * i.qty; 
             total += sub; 
-            msg += `• ${i.name} (${i.size} / ${i.thick} ${i.unit}) - ${i.qty}× - ${sub.toFixed(3)}$%0A`; 
+            let spec = i.thick ? `${i.thick} ${i.unit || ''}`.trim() : (i.unit || '');
+            let specStr = spec ? ` / ${spec}` : '';
+            msg += `• ${i.name} (${i.size}${specStr}) - ${i.qty}× - ${sub.toFixed(3)}$%0A`; 
         });
         msg += `%0A*الإجمالي الكلي: ${total.toFixed(3)}$*`;
         window.open(`https://wa.me/963941574544?text=${msg}`, '_blank');
     }
 
+    function filteredData() {
+        if (currentFilter === 'الكل') return productData;
+        return productData.filter(p => String(p.type || '').trim().toUpperCase() === currentFilter.trim().toUpperCase());
+    }
+
     function filterProducts(type, btn) {
+        currentFilter = type;
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         if(btn) btn.classList.add('active');
-        renderProducts(type === 'الكل' ? productData : productData.filter(p => p.type.toUpperCase() === type.toUpperCase()));
+        renderProducts(filteredData());
     }
 
     window.onload = () => {
