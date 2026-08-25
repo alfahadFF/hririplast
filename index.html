@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مصنع صهيب الحريري للصناعات البلاستيكية</title>
     
-    <!-- ربط ملف المانيفست للـ PWA -->
+    <!-- PWA & Apple Meta -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#111111">
-    
-    <!-- الوسوم الخاصة بأجهزة Apple لتثبيت الـ PWA بشكل ممتاز -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="مصنع الحريري">
@@ -30,7 +28,7 @@
         .agent-container img { height: 50px; width: auto; object-fit: contain; }
         
         .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding: 20px; }
-        .product-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .product-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; position: relative; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
         .field-label { font-size: 0.75rem; color: #666; font-weight: bold; margin-bottom: 2px; }
         select, input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
@@ -38,25 +36,22 @@
         .price-container { background: #f1f5f9; padding: 10px; border-radius: 6px; margin: 10px 0; text-align: center; }
         .original-price { text-decoration: line-through; color: #999; font-size: 0.85rem; }
         .final-price { color: #d32f2f; font-weight: bold; font-size: 1.1rem; }
-        .add-btn { grid-column: span 2; padding: 12px; background: #000; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        
+        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: bold; margin-top: 4px; }
+        .status-available { background: #e8f5e9; color: #2e7d32; }
+        .status-unavailable { background: #ffebee; color: #c62828; }
+
+        .add-btn { grid-column: span 2; padding: 12px; background: #000; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .add-btn:disabled { background: #94a3b8; cursor: not-allowed; opacity: 0.7; }
         
         .cart-section { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; border-top: 2px solid #000; z-index: 1000; box-shadow: 0 -5px 10px rgba(0,0,0,0.1); }
         footer { background: #333; color: #fff; padding: 30px 20px; text-align: center; margin-top: 20px; }
         .footer-link { background: #444; color: #fff; padding: 15px; text-decoration: none; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .loading-state, .error-state { text-align: center; padding: 40px; font-size: 1.2rem; color: #666; grid-column: 1 / -1; }
 
-        /* شريط التثبيت الخاص بـ iPhone */
         .ios-install-banner {
-            display: none;
-            background: #222;
-            color: #fff;
-            padding: 12px 15px;
-            font-size: 0.85rem;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 2px solid #ff9900;
-            position: relative;
-            z-index: 1100;
+            display: none; background: #222; color: #fff; padding: 12px 15px; font-size: 0.85rem;
+            align-items: center; justify-content: space-between; border-bottom: 2px solid #ff9900; position: relative; z-index: 1100;
         }
         .ios-install-banner .text { flex: 1; margin-left: 10px; line-height: 1.4; }
         .ios-install-banner .close-btn { background: none; border: none; color: #ff9900; font-size: 1.2rem; cursor: pointer; font-weight: bold; }
@@ -66,7 +61,6 @@
 </head>
 <body>
 
-<!-- شريط إرشاد التثبيت على أجهزة آيفون -->
 <div id="ios-banner" class="ios-install-banner">
     <div class="text">
         📱 <strong>لتثبيت التطبيق على آيفون:</strong> اضغط زر المشاركة <span style="font-size: 1.1rem;">⎘</span> أسفل المتصفح ثم اختَر <strong>"إضافة إلى الشاشة الرئيسية"</strong>.
@@ -94,7 +88,7 @@
 </div>
 
 <div class="products-grid" id="products-container">
-    <div class="loading-state">جاري تحميل المنتجات...</div>
+    <div class="loading-state">جاري تحميل المنتجات... ⏳</div>
 </div>
 
 <div class="cart-section">
@@ -120,16 +114,13 @@
 </footer>
 
 <script>
-    const apiEndpoint = '/.netlify/functions/get-products';
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz7O5VbKtGpuZg1CQu4I2O4XSOD7khH3klzFRZtoHAXheIyWQVtpDHUEpDKlnrZXDpvzg/exec";
     let productData = [], cart = [];
 
-    // التحقق واكتشاف جهاز الآيفون
     function checkIosBanner() {
         const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
         const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
         const bannerDismissed = localStorage.getItem('iosBannerDismissed');
-
-        // يظهر الشريط فقط إذا كان الجهاز آيفون، والموقع يفتح من المتصفح (ليس كتطبيق مثبت جاهز)، ولم يقم بإغلاقه سابقاً
         if (isIos && !isStandalone && !bannerDismissed) {
             document.getElementById('ios-banner').style.display = 'flex';
         }
@@ -143,25 +134,35 @@
     async function fetchProducts() {
         const container = document.getElementById('products-container');
         try {
-            const response = await fetch(apiEndpoint);
-            if (!response.ok) throw new Error('فشل جلب البيانات من الخادم');
+            const response = await fetch(`${SCRIPT_URL}?action=getProducts`);
+            if (!response.ok) throw new Error('فشل جلب البيانات من السيرفر');
             
-            const data = await response.text();
-            const rows = data.split('\n');
+            const resData = await response.json();
+            const rawProducts = resData.data || [];
+            
+            // تجميع المقاسات والسماكات لكل منتج بالاسم والنوع
             let grouped = {};
-
-            for (let i = 1; i < rows.length; i++) {
-                if (!rows[i].trim()) continue;
-                const row = parseCSVRow(rows[i]);
-                
-                if (row.length >= 9 && row[1]) {
-                    let originalPrice = row[5] ? parseFloat(row[5].replace('$', '').trim()) : 0;
-                    let discountedPrice = row[8] ? parseFloat(row[8].replace('$', '').trim()) : originalPrice;
-
-                    if (!grouped[row[1]]) grouped[row[1]] = { name: row[1], type: row[0], image: row[7], variants: [] };
-                    grouped[row[1]].variants.push({ size: row[2], thick: row[3], price: originalPrice, finalPrice: discountedPrice });
+            rawProducts.forEach(item => {
+                const key = `${item.type}_${item.name}`;
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        name: item.name,
+                        type: item.type,
+                        image: item.img,
+                        variants: []
+                    };
                 }
-            }
+                grouped[key].variants.push({
+                    id: item.id,
+                    size: item.size,
+                    thick: item.thick,
+                    unit: item.unit,
+                    price: parseFloat(item.price) || 0,
+                    finalPrice: parseFloat(item.discountPrice) || parseFloat(item.price) || 0,
+                    available: item.available || 'متوفر'
+                });
+            });
+
             productData = Object.values(grouped);
             
             if (productData.length === 0) {
@@ -182,7 +183,11 @@
             const card = document.createElement('div');
             card.className = 'product-card';
             card.innerHTML = `
-                <div style="text-align:center;"><img src="${p.image}" style="height:100px;" alt="${p.name}"><h4>${p.name}</h4></div>
+                <div style="text-align:center;">
+                    <img src="${p.image || 'https://via.placeholder.com/150'}" style="height:100px; max-width:100%; object-fit:contain;" alt="${p.name}">
+                    <h4 style="margin:8px 0 2px;">${p.name}</h4>
+                    <div id="status-${pIndex}"></div>
+                </div>
                 <div class="form-grid">
                     <div><div class="field-label">القياس</div><select id="size-${pIndex}" onchange="updateView(${pIndex})">${[...new Set(p.variants.map(v=>v.size))].map(s=>`<option value="${s}">${s}</option>`).join('')}</select></div>
                     <div><div class="field-label">العدد</div><input type="number" id="qty-${pIndex}" value="1" min="1" oninput="updateView(${pIndex})"></div>
@@ -193,7 +198,7 @@
                     <div class="original-price" id="orig-${pIndex}">السعر: 0.00$</div>
                     <div class="final-price" id="discount-${pIndex}">بعد الحسم: 0.00$</div>
                 </div>
-                <button class="add-btn" onclick="addToCart(${pIndex})">إضافة للسلة</button>
+                <button class="add-btn" id="addBtn-${pIndex}" onclick="addToCart(${pIndex})">إضافة للسلة</button>
             `;
             container.appendChild(card);
             updateView(pIndex);
@@ -204,28 +209,45 @@
         const p = productData[pIndex];
         const size = document.getElementById(`size-${pIndex}`).value;
         const thickSelect = document.getElementById(`thick-${pIndex}`);
-        const qty = document.getElementById(`qty-${pIndex}`).value;
+        const qty = Math.max(1, parseInt(document.getElementById(`qty-${pIndex}`).value) || 1);
         const opts = p.variants.filter(v => v.size == size);
         
-        thickSelect.innerHTML = opts.map(v => `<option value="${v.thick}">${v.thick}</option>`).join('');
-        const match = p.variants.find(v => v.size == size && v.thick == thickSelect.value);
+        thickSelect.innerHTML = opts.map(v => `<option value="${v.thick}">${v.thick ? v.thick + ' ' + (v.unit || '') : 'قياسي'}</option>`).join('');
+        const match = p.variants.find(v => v.size == size && (v.thick ? (v.thick + ' ' + (v.unit || '')) : 'قياسي') == thickSelect.value) || opts[0];
         
-        if(match) {
+        if (match) {
             let totalOrig = match.price * qty;
             let totalFinal = match.finalPrice * qty;
-            document.getElementById(`orig-${pIndex}`).innerText = "السعر: " + totalOrig.toFixed(2) + "$";
-            document.getElementById(`discount-${pIndex}`).innerText = "بعد الحسم: " + totalFinal.toFixed(2) + "$";
-            document.getElementById(`total-${pIndex}`).value = totalFinal.toFixed(2) + "$";
+            
+            document.getElementById(`orig-${pIndex}`).innerText = "السعر: " + totalOrig.toFixed(3) + "$";
+            document.getElementById(`discount-${pIndex}`).innerText = "بعد الحسم: " + totalFinal.toFixed(3) + "$";
+            document.getElementById(`total-${pIndex}`).value = totalFinal.toFixed(3) + "$";
+
+            const statusContainer = document.getElementById(`status-${pIndex}`);
+            const addBtn = document.getElementById(`addBtn-${pIndex}`);
+            const isAvailable = (match.available !== 'غير متوفر');
+
+            if (isAvailable) {
+                statusContainer.innerHTML = '<span class="status-badge status-available">● متوفر</span>';
+                addBtn.disabled = false;
+                addBtn.innerText = "إضافة للسلة";
+            } else {
+                statusContainer.innerHTML = '<span class="status-badge status-unavailable">✕ غير متوفر حالياً</span>';
+                addBtn.disabled = true;
+                addBtn.innerText = "الصنف غير متوفر";
+            }
         }
     }
 
     function addToCart(pIndex) {
         const p = productData[pIndex];
         const size = document.getElementById(`size-${pIndex}`).value;
-        const thick = document.getElementById(`thick-${pIndex}`).value;
-        const qty = document.getElementById(`qty-${pIndex}`).value;
-        const match = p.variants.find(v => v.size == size && v.thick == thick);
+        const thickVal = document.getElementById(`thick-${pIndex}`).value;
+        const qty = Math.max(1, parseInt(document.getElementById(`qty-${pIndex}`).value) || 1);
+        const match = p.variants.find(v => v.size == size && (v.thick ? (v.thick + ' ' + (v.unit || '')) : 'قياسي') == thickVal) || p.variants[0];
         
+        if (match.available === 'غير متوفر') return;
+
         cart.push({ ...match, price: match.finalPrice, name: p.name, qty });
         updateCartList();
     }
@@ -236,9 +258,9 @@
         list.innerHTML = cart.map(i => {
             let sub = i.price * i.qty;
             total += sub;
-            return `<li>${i.name} - ${i.qty}× - ${sub.toFixed(2)}$</li>`;
+            return `<li>${i.name} (${i.size}${i.thick ? ' - ' + i.thick : ''}) - ${i.qty}× - ${sub.toFixed(3)}$</li>`;
         }).join('');
-        document.getElementById('total-cart-price').innerText = "المجموع الكلي: " + total.toFixed(2) + "$";
+        document.getElementById('total-cart-price').innerText = "المجموع الكلي: " + total.toFixed(3) + "$";
     }
 
     function sendWhatsApp() {
@@ -247,8 +269,12 @@
         if(cart.length === 0) return alert("السلة فارغة!");
         let total = 0;
         let msg = `*طلب جديد من مصنع صهيب الحريري*%0A%0Aالعميل: ${n}%0Aالهاتف: ${p}%0Aالعنوان: ${a}%0A---%0A`;
-        cart.forEach(i => { let sub = i.price * i.qty; total += sub; msg += `• ${i.name} (${i.size}/${i.thick}) - ${i.qty}× - ${sub.toFixed(2)}$%0A`; });
-        msg += `%0A*الإجمالي الكلي: ${total.toFixed(2)}$*`;
+        cart.forEach(i => { 
+            let sub = i.price * i.qty; 
+            total += sub; 
+            msg += `• ${i.name} (${i.size}${i.thick ? ' / ' + i.thick : ''}) - ${i.qty}× - ${sub.toFixed(3)}$%0A`; 
+        });
+        msg += `%0A*الإجمالي الكلي: ${total.toFixed(3)}$*`;
         window.open(`https://wa.me/963941574544?text=${msg}`, '_blank');
     }
 
@@ -256,16 +282,6 @@
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         if(btn) btn.classList.add('active');
         renderProducts(type === 'الكل' ? productData : productData.filter(p => p.type.toUpperCase() === type.toUpperCase()));
-    }
-
-    function parseCSVRow(str) {
-        let arr = [], quote = false, col = '';
-        for (let i = 0; i < str.length; i++) {
-            if (str[i] == '"') quote = !quote;
-            else if (str[i] == ',' && !quote) { arr.push(col.trim()); col = ''; }
-            else col += str[i];
-        }
-        arr.push(col.trim()); return arr;
     }
 
     window.onload = () => {
