@@ -3,87 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>إدارة المنتجات | مصنع صهيب الحريري</title>
-
+  <title>إدارة المنتجات | Hririplast</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
-
   <style>
     :root {
-      --primary: #ff9900;
-      --primary-hover: #e08800;
-      --bg: #121212;
-      --card-bg: #1e1e1e;
-      --input-bg: #282828;
-      --text: #f0f0f0;
-      --muted: #888;
-      --border: #333;
-      --danger: #ff4d4d;
-      --success: #4CAF50;
+      --primary: #ff9900; --primary-hover: #e08800; --bg: #121212;
+      --card-bg: #1e1e1e; --input-bg: #282828; --text: #f0f0f0;
+      --muted: #888; --border: #333; --danger: #ff4d4d; --success: #4CAF50;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
     body { background-color: var(--bg); color: var(--text); padding: 12px; display: flex; justify-content: center; min-height: 100vh; }
     .container { width: 100%; max-width: 520px; }
-
-    /* شاشة القفل */
-    #lockScreen {
-      position: fixed; inset: 0; background: #121212; z-index: 9999;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
-    }
-    .lock-card {
-      background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px;
-      padding: 26px 20px; width: 100%; max-width: 340px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-    }
-    .pin-box {
-      width: 100%; padding: 14px; text-align: center; font-size: 1.6rem; letter-spacing: 6px;
-      background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; color: #fff;
-      outline: none; margin: 15px 0;
-    }
-
-    /* الشريط العلوي */
-    .header-bar {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
-    }
-    .header-title {
-      font-family: 'Cairo', sans-serif; font-weight: 800; color: var(--primary); font-size: 1.1rem;
-    }
-    .btn-logout {
-      background: transparent; border: 1px solid var(--danger); color: var(--danger);
-      padding: 6px 12px; border-radius: 6px; font-size: 0.82rem; font-weight: bold; cursor: pointer;
-    }
-
+    #lockScreen { position: fixed; inset: 0; background: #121212; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .lock-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 26px 20px; width: 100%; max-width: 340px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+    .pin-box { width: 100%; padding: 14px; text-align: center; font-size: 1.6rem; letter-spacing: 6px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; color: #fff; outline: none; margin: 15px 0; }
+    .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+    .header-title { font-family: 'Cairo', sans-serif; font-weight: 800; color: var(--primary); font-size: 1.1rem; }
+    .btn-logout { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px 12px; border-radius: 6px; font-size: 0.82rem; font-weight: bold; cursor: pointer; }
     .card { background: var(--card-bg); border-radius: 12px; padding: 16px; border: 1px solid var(--border); }
     .sub-mode { display: flex; gap: 8px; margin-bottom: 15px; background: #252525; padding: 4px; border-radius: 8px; }
-    .sub-mode button {
-      flex: 1; padding: 9px; border: none; background: transparent; color: #aaa;
-      border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 700;
-    }
+    .sub-mode button { flex: 1; padding: 9px; border: none; background: transparent; color: #aaa; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 700; }
     .sub-mode button.active { background: #383838; color: var(--primary); font-weight: bold; }
-
     .form-group { margin-bottom: 12px; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-
     label { display: block; font-size: 0.82rem; color: #bbb; margin-bottom: 5px; font-weight: 600; }
-    input, select {
-      width: 100%; padding: 10px 12px; background: var(--input-bg); border: 1px solid var(--border);
-      border-radius: 8px; color: #fff; font-size: 0.95rem; outline: none;
-    }
+    input, select { width: 100%; padding: 10px 12px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 0.95rem; outline: none; }
     input:focus, select:focus { border-color: var(--primary); }
-
-    .upload-box {
-      border: 1px dashed var(--primary); padding: 12px; text-align: center;
-      border-radius: 8px; cursor: pointer; color: var(--primary); font-size: 0.88rem; display: block; font-weight: bold;
-    }
+    .upload-box { border: 1px dashed var(--primary); padding: 12px; text-align: center; border-radius: 8px; cursor: pointer; color: var(--primary); font-size: 0.88rem; display: block; font-weight: bold; }
     .img-preview { width: 100%; max-height: 150px; object-fit: contain; background: #181818; border-radius: 8px; margin-top: 8px; display: none; }
-
-    .submit-btn {
-      width: 100%; padding: 13px; background: var(--primary); color: #000; border: none;
-      border-radius: 8px; font-family: 'Cairo', sans-serif; font-weight: 800; font-size: 1rem;
-      cursor: pointer; margin-top: 10px; transition: 0.2s;
-    }
+    .submit-btn { width: 100%; padding: 13px; background: var(--primary); color: #000; border: none; border-radius: 8px; font-family: 'Cairo', sans-serif; font-weight: 800; font-size: 1rem; cursor: pointer; margin-top: 10px; transition: 0.2s; }
     .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .status { text-align: center; margin-top: 10px; font-size: 0.88rem; font-weight: bold; }
     .hidden { display: none !important; }
@@ -91,10 +42,9 @@
 </head>
 <body>
 
-<!-- شاشة تسجيل الدخول بالرمز -->
 <div id="lockScreen">
   <div class="lock-card">
-    <h3 style="font-family:'Cairo'; font-weight:800; color: var(--primary); margin-bottom: 4px;">إدارة أصناف الحريري</h3>
+    <h3 style="font-family:'Cairo'; font-weight:800; color: var(--primary); margin-bottom: 4px;">Hririplast</h3>
     <p style="font-size: 0.82rem; color: var(--muted);">أدخل رمز PIN لتسجيل الدخول</p>
     <form id="pinForm" onsubmit="handleLogin(event)">
       <input type="password" id="pinInput" class="pin-box" placeholder="••••" maxlength="8" inputmode="numeric" required autofocus>
@@ -104,10 +54,9 @@
   </div>
 </div>
 
-<!-- محتوى لوحة التحكم -->
 <div class="container" id="adminContent">
   <div class="header-bar">
-    <div class="header-title">⚙️ إدارة منتجات المصنع</div>
+    <div class="header-title">⚙️ لوحة إدارة منتجات Hririplast</div>
     <button class="btn-logout" onclick="logout()">خروج 🚪</button>
   </div>
 
@@ -118,7 +67,6 @@
     </div>
 
     <form id="productForm">
-      <!-- اختيار صنف للتعديل -->
       <div id="selectProductGroup" class="form-group">
         <label>اختر المنتج المراد تعديله:</label>
         <select id="productSelect" onchange="onProductSelectChange()">
@@ -129,24 +77,20 @@
       <div class="grid-2">
         <div class="form-group">
           <label>كود المنتج (ID) *</label>
-          <input type="text" id="pId" required placeholder="مثلاً: pvc-p2-46030">
+          <input type="text" id="pId" required placeholder="مثلاً: pvc-p2-1.8">
         </div>
         <div class="form-group">
-          <label>القسم / النوع *</label>
+          <label>التصنيف / النوع *</label>
           <input list="typeList" id="pType" required placeholder="PPR, PVC, كهرباء...">
           <datalist id="typeList">
-            <option value="PPR">
-            <option value="PVC">
-            <option value="كهرباء">
-            <option value="زراعي">
-            <option value="نحاسيات">
+            <option value="PPR"><option value="PVC"><option value="كهرباء"><option value="زراعي"><option value="نحاسيات">
           </datalist>
         </div>
       </div>
 
       <div class="form-group">
-        <label>اسم المنتج *</label>
-        <input type="text" id="pName" required placeholder="مثال: بوري، كوع، سكر...">
+        <label>اسم الصنف *</label>
+        <input type="text" id="pName" required placeholder="بوري، كوع، سكر...">
       </div>
 
       <div class="grid-3">
@@ -160,32 +104,34 @@
         </div>
         <div class="form-group">
           <label>وحدة القياس</label>
-          <input list="unitList" id="pUnit" placeholder="مم، قطعة، إنش...">
+          <input list="unitList" id="pUnit" placeholder="مم، قطعة...">
           <datalist id="unitList">
-            <option value="مم">
-            <option value="إنش">
-            <option value="قطعة">
-            <option value="متر">
+            <option value="مم"><option value="إنش"><option value="قطعة"><option value="متر">
           </datalist>
         </div>
       </div>
 
       <div class="grid-3">
         <div class="form-group">
-          <label>السعر الأصلي ($) *</label>
-          <input type="number" step="0.001" id="pPrice" required placeholder="1.75">
+          <label>السعر الأساسي ($) *</label>
+          <input type="number" step="0.001" id="pPrice" required oninput="calcDiscountPrice()">
+        </div>
+        <div class="form-group">
+          <label>نسبة الخصم (%)</label>
+          <input type="number" step="0.1" min="0" max="100" id="pDiscount" placeholder="مثلاً: 25" oninput="calcDiscountPrice()">
         </div>
         <div class="form-group">
           <label>السعر بعد الحسم ($) *</label>
-          <input type="number" step="0.001" id="pDiscountPrice" required placeholder="1.75">
+          <input type="number" step="0.001" id="pDiscountPrice" required>
         </div>
-        <div class="form-group">
-          <label>حالة التوفر *</label>
-          <select id="pAvailable">
-            <option value="متوفر">متوفر ✅</option>
-            <option value="غير متوفر">غير متوفر ❌</option>
-          </select>
-        </div>
+      </div>
+
+      <div class="form-group">
+        <label>حالة التوفر *</label>
+        <select id="pAvailable">
+          <option value="متوفر">متوفر ✅</option>
+          <option value="غير متوفر">غير متوفر ❌</option>
+        </select>
       </div>
 
       <div class="form-group">
@@ -195,17 +141,16 @@
         <img id="pPreview" class="img-preview" alt="معاينة">
       </div>
 
-      <button type="submit" id="pSubmitBtn" class="submit-btn">حفظ التعديلات</button>
+      <button type="submit" id="pSubmitBtn" class="submit-btn">حفظ في ورقة MHD</button>
       <div id="pStatus" class="status"></div>
     </form>
   </div>
 </div>
 
 <script>
-  // رابط Google Apps Script الخاص بك
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz7O5VbKtGpuZg1CQu4I2O4XSOD7khH3klzFRZtoHAXheIyWQVtpDHUEpDKlnrZXDpvzg/exec";
   const CLOUD_NAME = "dvzg70krq";
-  const UPLOAD_PRESET = "alnahhas"; // تأكد من اسم الـ Unsigned Preset الخاص بك
+  const UPLOAD_PRESET = "Hririplast";
 
   let currentPin = sessionStorage.getItem('auth_pin') || '';
   let allProducts = [];
@@ -219,7 +164,7 @@
     const btn = document.getElementById('loginBtn');
     const err = document.getElementById('pinError');
     btn.disabled = true;
-    err.textContent = 'جاري التحقق من السيرفر... ⏳';
+    err.textContent = 'جاري التحقق... ⏳';
 
     const ok = await verifyAndUnlock(pin, true);
     btn.disabled = false;
@@ -267,8 +212,8 @@
     allProducts.forEach(p => {
       const opt = document.createElement('option');
       opt.value = p.id;
-      const statusBadge = p.available === 'غير متوفر' ? ' [غير متوفر]' : '';
-      opt.textContent = `[${p.type}] ${p.name} (${p.size} - ${p.thick || ''}) - $${p.discountPrice || p.price}${statusBadge}`;
+      const statusBadge = (p.available === 'غير متوفر') ? ' [❌ غير متوفر]' : '';
+      opt.textContent = `[${p.type}] ${p.name} (${p.size} - ${p.thick || ''}) - $${p.discountPrice}${statusBadge}`;
       select.appendChild(opt);
     });
   }
@@ -285,7 +230,16 @@
     document.getElementById('pThick').value = p.thick || '';
     document.getElementById('pUnit').value = p.unit || '';
     document.getElementById('pPrice').value = p.price || 0;
-    document.getElementById('pDiscountPrice').value = p.discountPrice !== undefined ? p.discountPrice : p.price;
+
+    // تحويل القيمة العشرية من الشيت إلى نسبة مئوية للعرض (مثال: 0.25 -> 25)
+    let rawDiscount = parseFloat(p.discount) || 0;
+    if (rawDiscount > 0 && rawDiscount <= 1) {
+      document.getElementById('pDiscount').value = (rawDiscount * 100).toFixed(1).replace(/\.0$/, '');
+    } else {
+      document.getElementById('pDiscount').value = rawDiscount;
+    }
+
+    document.getElementById('pDiscountPrice').value = p.discountPrice || p.price || 0;
     document.getElementById('pAvailable').value = p.available || 'متوفر';
 
     const prev = document.getElementById('pPreview');
@@ -294,6 +248,18 @@
       prev.style.display = 'block';
     } else {
       prev.style.display = 'none';
+    }
+  }
+
+  function calcDiscountPrice() {
+    const price = parseFloat(document.getElementById('pPrice').value) || 0;
+    const discountPercent = parseFloat(document.getElementById('pDiscount').value) || 0;
+    
+    if (discountPercent > 0 && discountPercent <= 100) {
+      const finalPrice = price * (1 - (discountPercent / 100));
+      document.getElementById('pDiscountPrice').value = finalPrice.toFixed(3);
+    } else {
+      document.getElementById('pDiscountPrice').value = price.toFixed(3);
     }
   }
 
@@ -331,7 +297,7 @@
     const status = document.getElementById('pStatus');
     btn.disabled = true;
     status.style.color = '#ff9900';
-    status.textContent = 'جاري الحفظ... ⏳';
+    status.textContent = 'جاري حفظ البيانات في ورقة MHD... ⏳';
 
     try {
       let imgUrl = '';
@@ -340,6 +306,10 @@
         status.textContent = 'جاري رفع الصورة إلى Cloudinary... ☁️';
         imgUrl = await uploadToCloudinary(file);
       }
+
+      // تحويل النسبة المئوية إلى قيمة عشرية للشيت (مثال: 25 -> 0.25)
+      const inputPercent = parseFloat(document.getElementById('pDiscount').value) || 0;
+      const decimalDiscount = (inputPercent > 0) ? (inputPercent / 100) : 0;
 
       const payload = {
         pin: currentPin,
@@ -351,6 +321,7 @@
         thick: document.getElementById('pThick').value,
         unit: document.getElementById('pUnit').value,
         price: document.getElementById('pPrice').value,
+        discount: decimalDiscount,
         discountPrice: document.getElementById('pDiscountPrice').value,
         available: document.getElementById('pAvailable').value,
         img: imgUrl || undefined
