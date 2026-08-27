@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>مصنع صهيب للصناعات البلاستيكية | Hririplast</title>
     
+    <!-- PWA & Apple Meta -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#111111">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -20,6 +21,7 @@
         .logo-circle { width: 85px; height: 85px; background: white; border-radius: 50%; margin: -42px auto 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #ff9900; }
         .logo-circle img { width: 80%; }
         
+        /* شريط البحث */
         .search-container { max-width: 600px; margin: 12px auto 5px; padding: 0 10px; }
         .search-box {
             width: 100%; padding: 10px 15px; border-radius: 25px; border: 1px solid #cbd5e1;
@@ -34,6 +36,7 @@
         .agent-container { max-width: 600px; margin: 5px auto 10px; background: white; padding: 8px 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 10px; border: 1px solid #eee; font-size: 0.85rem; }
         .agent-container img { height: 35px; width: auto; object-fit: contain; }
         
+        /* شبكة المنتجات */
         .products-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -43,6 +46,7 @@
             margin: 0 auto;
         }
 
+        /* بطاقة المنتج بخلفية بيج ناعمة */
         .product-card {
             background: #faf7f2;
             padding: 10px;
@@ -54,6 +58,7 @@
             box-shadow: 0 3px 6px rgba(0,0,0,0.04);
         }
 
+        /* حاوية الصورة بخلفية بيضاء */
         .product-card .img-box {
             width: 100%;
             height: 95px;
@@ -80,13 +85,14 @@
             text-align: center;
             margin-bottom: 4px;
             color: #2c2520;
-            min-height: 38px;
+            height: 38px;
             display: flex;
             align-items: center;
             justify-content: center;
             line-height: 1.2;
         }
 
+        /* حقول متباينة الألوان */
         .field-group {
             margin-bottom: 6px;
             padding: 4px 6px;
@@ -94,13 +100,22 @@
             border: 1px solid transparent;
         }
 
-        .field-group.fg-size { background: #f0f7ff; border-color: #d0e5ff; }
+        .field-group.fg-size {
+            background: #f0f7ff;
+            border-color: #d0e5ff;
+        }
         .field-group.fg-size .field-label { color: #0369a1; }
 
-        .field-group.fg-thick { background: #f0fdf4; border-color: #bbf7d0; }
+        .field-group.fg-thick {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
         .field-group.fg-thick .field-label { color: #15803d; }
 
-        .field-group.fg-qty { background: #faf5ff; border-color: #e9d5ff; }
+        .field-group.fg-qty {
+            background: #faf5ff;
+            border-color: #e9d5ff;
+        }
         .field-group.fg-qty .field-label { color: #7e22ce; }
 
         .field-label {
@@ -122,6 +137,7 @@
         }
         select:focus, input:focus { border-color: #ff9900; }
 
+        /* حاوية الأسعار بتنسيق دافئ */
         .price-container {
             background: #fffbeb;
             padding: 6px;
@@ -183,7 +199,8 @@
         .cart-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
         
         footer { background: #222; color: #fff; padding: 25px 15px; text-align: center; margin-top: 20px; font-size: 0.85rem; }
-        .footer-link { background: #333; color: #fff; padding: 10px 15px; text-decoration: none; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .footer-link { background: #333; color: #fff; padding: 10px 15px; text-decoration: none; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; transition: 0.2s; }
+        .footer-link:hover { background: #444; }
         .loading-state, .error-state { text-align: center; padding: 30px; font-size: 1rem; color: #666; grid-column: span 2; }
     </style>
 </head>
@@ -195,9 +212,10 @@
     <h2 style="font-size: 1.1rem; margin-bottom: 5px;">مصنع صهيب للصناعات البلاستيكية</h2>
     
     <div class="search-container">
-        <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث عن صنف أو قياس..." oninput="onSearchInput()">
+        <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث عن صنف، قياس، أو كود..." oninput="onSearchInput()">
     </div>
 
+    <!-- حاوية أزرار الفلترة التلقائية -->
     <div class="filter-btns" id="filter-buttons-container">
         <button class="filter-btn active" onclick="filterProducts('الكل', this)">الكل</button>
     </div>
@@ -250,52 +268,28 @@
         return String(text || '').replace(/"/g, '&quot;');
     }
 
-    function cleanSize(rawSize) {
-        let s = String(rawSize || '').trim();
-        if (!s) return 'قياسي';
-        if (s.includes('2026-01-02') || (s.includes('T08:00:00') && s.includes('-01-02'))) return '1/2"';
-        if (s.includes('2026-03-04') || (s.includes('T08:00:00') && s.includes('-03-04'))) return '3/4"';
-        return s;
-    }
-
-    function naturalSort(a, b) {
-        return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
-    }
-
     async function fetchProducts() {
         const container = document.getElementById('products-container');
         try {
-            const response = await fetch(`${SCRIPT_URL}?action=getProducts&t=${Date.now()}`, { cache: 'no-store' });
+            const response = await fetch(`${SCRIPT_URL}?action=getProducts`);
             const resData = await response.json();
             const rawProducts = resData.data || [];
             
-            if (rawProducts.length === 0) {
-                container.innerHTML = '<div class="error-state">لا توجد أصناف متاحة حالياً.</div>';
-                return;
-            }
-
             renderFilterButtons(rawProducts);
 
             let grouped = {};
-            let orderKeys = [];
-
             rawProducts.forEach(item => {
-                const name = String(item.name || '').trim();
-                if (!name) return;
+                if (!item.name || !item.id) return;
+                const key = `${item.type}_${item.name}`.trim();
                 
-                const type = String(item.type || 'عام').trim();
-                const key = `${type}_${name}`;
-
                 if (!grouped[key]) {
                     grouped[key] = {
-                        name: name,
-                        type: type,
+                        name: item.name,
+                        type: item.type,
                         image: item.img || '',
                         variants: []
                     };
-                    orderKeys.push(key);
                 }
-                
                 if (!grouped[key].image && item.img) {
                     grouped[key].image = item.img;
                 }
@@ -306,7 +300,7 @@
 
                 grouped[key].variants.push({
                     id: String(item.id || '').trim(),
-                    size: cleanSize(item.size),
+                    size: String(item.size || '').trim(),
                     thick: String(item.thick || '').trim(),
                     unit: String(item.unit || '').trim(),
                     price: basePrice,
@@ -316,7 +310,7 @@
                 });
             });
 
-            productData = orderKeys.map(k => grouped[k]);
+            productData = Object.values(grouped);
             applyFilterAndRender();
         } catch (error) {
             container.innerHTML = '<div class="error-state">حدث خطأ أثناء تحميل البيانات.</div>';
@@ -325,13 +319,7 @@
 
     function renderFilterButtons(rawProducts) {
         const filterContainer = document.getElementById('filter-buttons-container');
-        const types = [];
-        rawProducts.forEach(p => {
-            const t = String(p.type || 'عام').trim();
-            if (t && !types.includes(t)) {
-                types.push(t);
-            }
-        });
+        const types = [...new Set(rawProducts.map(p => String(p.type || '').trim()))].filter(t => t !== '');
         
         let html = `<button class="filter-btn ${currentFilter === 'الكل' ? 'active' : ''}" onclick="filterProducts('الكل', this)">الكل</button>`;
         types.forEach(type => {
@@ -343,12 +331,12 @@
 
     function getFilteredList() {
         return productData.filter(p => {
-            const matchFilter = (currentFilter === 'الكل') || (p.type.toUpperCase() === currentFilter.toUpperCase());
+            const matchFilter = (currentFilter === 'الكل') || (String(p.type || '').trim().toUpperCase() === currentFilter.trim().toUpperCase());
             const query = searchQuery.trim().toLowerCase();
             if (!query) return matchFilter;
             
             const matchName = p.name.toLowerCase().includes(query);
-            const matchVariant = p.variants.some(v => v.size.toLowerCase().includes(query));
+            const matchVariant = p.variants.some(v => v.size.toLowerCase().includes(query) || v.id.toLowerCase().includes(query));
             return matchFilter && (matchName || matchVariant);
         });
     }
@@ -379,14 +367,14 @@
         }
 
         products.forEach((p, pIndex) => {
-            const uniqueSizes = [...new Set(p.variants.map(v => v.size))].filter(s => s !== '').sort(naturalSort);
+            const uniqueSizes = [...new Set(p.variants.map(v => String(v.size || '').trim()))].filter(s => s !== '');
             
             const card = document.createElement('div');
             card.className = 'product-card';
             card.innerHTML = `
                 <div>
                     <div class="img-box">
-                        <img id="img-${pIndex}" src="${p.image || 'https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png'}" alt="${escapeHtml(p.name)}">
+                        <img id="img-${pIndex}" src="${p.image || 'https://via.placeholder.com/150'}" alt="${escapeHtml(p.name)}">
                     </div>
                     <div class="product-title">${escapeHtml(p.name)}</div>
                     <div style="text-align:center; margin-bottom:4px;" id="status-${pIndex}"></div>
@@ -431,18 +419,13 @@
         const thickSelect = document.getElementById(`thick-${pIndex}`);
         const selectedSize = String(sizeSelect.value || '').trim();
 
-        const matchingVariants = p.variants.filter(v => v.size === selectedSize);
-        matchingVariants.sort((a, b) => {
-            let valA = `${a.thick} ${a.unit}`.trim();
-            let valB = `${b.thick} ${b.unit}`.trim();
-            return naturalSort(valA, valB);
-        });
-
+        const matchingVariants = p.variants.filter(v => String(v.size || '').trim() === selectedSize);
+        
         thickSelect.innerHTML = '';
-        matchingVariants.forEach(v => {
+        matchingVariants.forEach((v, vIdx) => {
             const opt = document.createElement('option');
+            opt.value = v.id || vIdx;
             let thickText = (v.thick && v.unit) ? `${v.thick} ${v.unit}` : (v.thick || v.unit || 'قياسي');
-            opt.value = v.id || `${v.thick}||${v.unit}`;
             opt.textContent = thickText;
             thickSelect.appendChild(opt);
         });
@@ -450,37 +433,25 @@
         updatePrice(pIndex);
     }
 
-    function getSelectedVariant(pIndex) {
-        const list = getFilteredList();
-        const p = list[pIndex];
-        if (!p || !p.variants.length) return null;
-
-        const sizeVal = String(document.getElementById(`size-${pIndex}`).value || '').trim();
-        const thickVal = String(document.getElementById(`thick-${pIndex}`).value || '');
-
-        let match = p.variants.find(v => String(v.id) === thickVal);
-        if (!match) {
-            const [thick, unit] = thickVal.split('||');
-            match = p.variants.find(v => 
-                v.size === sizeVal &&
-                v.thick === (thick || '').trim() &&
-                v.unit === (unit || '').trim()
-            );
-        }
-
-        return match || p.variants.find(v => v.size === sizeVal) || p.variants[0];
-    }
-
     function updatePrice(pIndex) {
         const list = getFilteredList();
         const p = list[pIndex];
-        const match = getSelectedVariant(pIndex);
-        if (!p || !match) return;
+        if (!p) return;
 
+        const sizeVal = String(document.getElementById(`size-${pIndex}`).value || '').trim();
+        const thickSelect = document.getElementById(`thick-${pIndex}`);
+        const selectedVariantId = thickSelect.value;
         const qty = Math.max(1, parseInt(document.getElementById(`qty-${pIndex}`).value) || 1);
 
-        const targetImg = match.image || p.image || 'https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png';
-        document.getElementById(`img-${pIndex}`).src = targetImg;
+        let match = p.variants.find(v => String(v.id) === String(selectedVariantId));
+        if (!match) {
+            match = p.variants.find(v => String(v.size || '').trim() === sizeVal) || p.variants[0];
+        }
+        if (!match) return;
+
+        if (match.image) {
+            document.getElementById(`img-${pIndex}`).src = match.image;
+        }
 
         const totalOrig = match.price * qty;
         const totalFinal = match.finalPrice * qty;
@@ -517,25 +488,15 @@
     function addToCart(pIndex) {
         const list = getFilteredList();
         const p = list[pIndex];
-        const match = getSelectedVariant(pIndex);
-        
-        if (!p || !match || String(match.available).trim() === 'غير متوفر') return;
+        if (!p) return;
 
+        const variantId = document.getElementById(`thick-${pIndex}`).value;
         const qty = Math.max(1, parseInt(document.getElementById(`qty-${pIndex}`).value) || 1);
-
-        const existingIndex = cart.findIndex(item => 
-            item.name === p.name && 
-            item.size === match.size && 
-            item.thick === match.thick && 
-            item.unit === match.unit
-        );
-
-        if (existingIndex > -1) {
-            cart[existingIndex].qty += qty;
-        } else {
-            cart.push({ ...match, name: p.name, qty });
-        }
+        const match = p.variants.find(v => String(v.id) === String(variantId)) || p.variants[0];
         
+        if (!match || String(match.available).trim() === 'غير متوفر') return;
+
+        cart.push({ ...match, name: p.name, qty });
         updateCartList();
     }
 
