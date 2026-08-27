@@ -212,7 +212,7 @@
     <h2 style="font-size: 1.1rem; margin-bottom: 5px;">مصنع صهيب للصناعات البلاستيكية</h2>
     
     <div class="search-container">
-        <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث عن صنف، قياس، أو كود..." oninput="onSearchInput()">
+        <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث عن صنف أو قياس..." oninput="onSearchInput()">
     </div>
 
     <!-- حاوية أزرار الفلترة التلقائية -->
@@ -268,7 +268,7 @@
         return String(text || '').replace(/"/g, '&quot;');
     }
 
-    // دالة ترتيب طبيعي وتصاعدي للأرقام والنصوص
+    // ترتيب تصاعدي للأرقام والمقاسات والنصوص
     function naturalSort(a, b) {
         return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
     }
@@ -283,23 +283,18 @@
             renderFilterButtons(rawProducts);
 
             let grouped = {};
-            rawProducts.forEach((item, index) => {
-                // الاعتماد على وجود الاسم فقط
-                if (!item.name || String(item.name).trim() === '') return;
+            rawProducts.forEach(item => {
+                // الاعتماد على الاسم فقط دون الحاجة لأي ID
+                const name = String(item.name || '').trim();
+                if (!name) return;
                 
-                const safeType = item.type ? String(item.type).trim() : 'عام';
-                const safeName = String(item.name).trim();
-                const key = `${safeType}_${safeName}`;
-                
-                // توليد ID تلقائي إذا لم يكن موجوداً
-                const safeId = item.id && String(item.id).trim() !== '' 
-                    ? String(item.id).trim() 
-                    : `gen_id_${index}_${Date.now()}`;
+                const type = String(item.type || 'عام').trim();
+                const key = `${type}_${name}`;
 
                 if (!grouped[key]) {
                     grouped[key] = {
-                        name: safeName,
-                        type: safeType,
+                        name: name,
+                        type: type,
                         image: item.img || '',
                         variants: []
                     };
@@ -313,7 +308,6 @@
                 const finalP = discountP > 0 ? discountP : basePrice;
 
                 grouped[key].variants.push({
-                    id: safeId,
                     size: String(item.size || 'قياسي').trim(),
                     thick: String(item.thick || '').trim(),
                     unit: String(item.unit || '').trim(),
@@ -324,7 +318,7 @@
                 });
             });
 
-            // تحويل الكائن إلى مصفوفة وترتيب المنتجات تصاعدياً حسب الاسم
+            // ترتيب أسماء المنتجات أبجدياً
             productData = Object.values(grouped).sort((a, b) => naturalSort(a.name, b.name));
             applyFilterAndRender();
         } catch (error) {
@@ -334,7 +328,7 @@
 
     function renderFilterButtons(rawProducts) {
         const filterContainer = document.getElementById('filter-buttons-container');
-        const types = [...new Set(rawProducts.map(p => String(p.type || '').trim()))].filter(t => t !== '');
+        const types = [...new Set(rawProducts.map(p => String(p.type || 'عام').trim()))].filter(t => t !== '');
         
         let html = `<button class="filter-btn ${currentFilter === 'الكل' ? 'active' : ''}" onclick="filterProducts('الكل', this)">الكل</button>`;
         types.forEach(type => {
@@ -351,7 +345,7 @@
             if (!query) return matchFilter;
             
             const matchName = p.name.toLowerCase().includes(query);
-            const matchVariant = p.variants.some(v => v.size.toLowerCase().includes(query) || v.id.toLowerCase().includes(query));
+            const matchVariant = p.variants.some(v => v.size.toLowerCase().includes(query));
             return matchFilter && (matchName || matchVariant);
         });
     }
@@ -383,7 +377,7 @@
 
         products.forEach((p, pIndex) => {
             // استخراج القياسات الفريدة وترتيبها تصاعدياً
-            const uniqueSizes = [...new Set(p.variants.map(v => String(v.size || '').trim()))]
+            const uniqueSizes = [...new Set(p.variants.map(v => String(v.size || 'قياسي').trim()))]
                 .filter(s => s !== '')
                 .sort(naturalSort);
             
@@ -437,9 +431,10 @@
         const thickSelect = document.getElementById(`thick-${pIndex}`);
         const selectedSize = String(sizeSelect.value || '').trim();
 
+        // تصفية المتغيرات التابعة للقياس المختار
         const matchingVariants = p.variants.filter(v => String(v.size || '').trim() === selectedSize);
         
-        // ترتيب السماكات / الوحدات تصاعدياً أيضاً إذا تعددت
+        // ترتيب السماكات / الوحدات تصاعدياً
         matchingVariants.sort((a, b) => {
             let valA = `${a.thick} ${a.unit}`.trim();
             let valB = `${b.thick} ${b.unit}`.trim();
@@ -447,10 +442,10 @@
         });
 
         thickSelect.innerHTML = '';
-        matchingVariants.forEach((v, vIdx) => {
+        matchingVariants.forEach((v) => {
             const opt = document.createElement('option');
-            opt.value = v.id || vIdx;
             let thickText = (v.thick && v.unit) ? `${v.thick} ${v.unit}` : (v.thick || v.unit || 'قياسي');
+            opt.value = `${v.thick}||${v.unit}`;
             opt.textContent = thickText;
             thickSelect.appendChild(opt);
         });
@@ -458,21 +453,29 @@
         updatePrice(pIndex);
     }
 
-    function updatePrice(pIndex) {
+    function getSelectedVariant(pIndex) {
         const list = getFilteredList();
         const p = list[pIndex];
-        if (!p) return;
+        if (!p || !p.variants.length) return null;
 
         const sizeVal = String(document.getElementById(`size-${pIndex}`).value || '').trim();
-        const thickSelect = document.getElementById(`thick-${pIndex}`);
-        const selectedVariantId = thickSelect.value;
-        const qty = Math.max(1, parseInt(document.getElementById(`qty-${pIndex}`).value) || 1);
+        const thickVal = String(document.getElementById(`thick-${pIndex}`).value || '');
+        const [thick, unit] = thickVal.split('||');
 
-        let match = p.variants.find(v => String(v.id) === String(selectedVariantId));
-        if (!match) {
-            match = p.variants.find(v => String(v.size || '').trim() === sizeVal) || p.variants[0];
-        }
+        let match = p.variants.find(v => 
+            String(v.size || '').trim() === sizeVal &&
+            String(v.thick || '').trim() === (thick || '').trim() &&
+            String(v.unit || '').trim() === (unit || '').trim()
+        );
+
+        return match || p.variants.find(v => String(v.size || '').trim() === sizeVal) || p.variants[0];
+    }
+
+    function updatePrice(pIndex) {
+        const match = getSelectedVariant(pIndex);
         if (!match) return;
+
+        const qty = Math.max(1, parseInt(document.getElementById(`qty-${pIndex}`).value) || 1);
 
         if (match.image) {
             document.getElementById(`img-${pIndex}`).src = match.image;
@@ -513,15 +516,26 @@
     function addToCart(pIndex) {
         const list = getFilteredList();
         const p = list[pIndex];
-        if (!p) return;
-
-        const variantId = document.getElementById(`thick-${pIndex}`).value;
-        const qty = Math.max(1, parseInt(document.getElementById(`qty-${pIndex}`).value) || 1);
-        const match = p.variants.find(v => String(v.id) === String(variantId)) || p.variants[0];
+        const match = getSelectedVariant(pIndex);
         
-        if (!match || String(match.available).trim() === 'غير متوفر') return;
+        if (!p || !match || String(match.available).trim() === 'غير متوفر') return;
 
-        cart.push({ ...match, name: p.name, qty });
+        const qty = Math.max(1, parseInt(document.getElementById(`qty-${pIndex}`).value) || 1);
+
+        // التحقق إذا كان نفس المنتج ونفس القياس والسماكة موجود مسبقاً في السلة لزيادة الكمية
+        const existingIndex = cart.findIndex(item => 
+            item.name === p.name && 
+            item.size === match.size && 
+            item.thick === match.thick && 
+            item.unit === match.unit
+        );
+
+        if (existingIndex > -1) {
+            cart[existingIndex].qty += qty;
+        } else {
+            cart.push({ ...match, name: p.name, qty });
+        }
+        
         updateCartList();
     }
 
