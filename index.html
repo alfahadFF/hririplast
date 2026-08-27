@@ -247,26 +247,18 @@
         return isNaN(num) ? 0 : num;
     }
 
-    function normalizeText(text) {
-        return String(text || '').replace(/\s+/g, ' ').trim();
-    }
-
     function escapeHtml(text) {
         return String(text || '').replace(/"/g, '&quot;');
     }
 
-    // معالجة التواريخ الناتجة عن أخطاء الجداول وتحويلها لكسور
     function cleanSize(rawSize) {
-        let s = normalizeText(rawSize);
+        let s = String(rawSize || '').trim();
         if (!s) return 'قياسي';
-        
-        if (s.includes('2026-01-02') || s.includes('T08:00:00') && s.includes('-01-02')) return '1/2"';
-        if (s.includes('2026-03-04') || s.includes('T08:00:00') && s.includes('-03-04')) return '3/4"';
-        
+        if (s.includes('2026-01-02') || (s.includes('T08:00:00') && s.includes('-01-02'))) return '1/2"';
+        if (s.includes('2026-03-04') || (s.includes('T08:00:00') && s.includes('-03-04'))) return '3/4"';
         return s;
     }
 
-    // دالة ترتيب تصاعدي ذكي
     function naturalSort(a, b) {
         return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
     }
@@ -289,45 +281,46 @@
             let orderKeys = [];
 
             rawProducts.forEach(item => {
-                const name = normalizeText(item.name || item.Name || item['الاسم']);
+                const name = String(item.name || '').trim();
                 if (!name) return;
                 
-                const type = normalizeText(item.type || item.Type || item['النوع'] || 'عام');
-                const key = `${type}___${name}`;
+                const type = String(item.type || 'عام').trim();
+                const key = `${type}_${name}`;
 
                 if (!grouped[key]) {
                     grouped[key] = {
                         name: name,
                         type: type,
-                        image: item.img || item.Image || '',
+                        image: item.img || '',
                         variants: []
                     };
                     orderKeys.push(key);
                 }
-                if (!grouped[key].image && (item.img || item.Image)) {
-                    grouped[key].image = item.img || item.Image;
+                
+                // حفظ أول صورة متوفرة للمنتج
+                if (!grouped[key].image && item.img) {
+                    grouped[key].image = item.img;
                 }
 
-                const basePrice = cleanNum(item.price || item.Price || item['السعر']);
-                const discountP = cleanNum(item.discountPrice || item.DiscountPrice);
+                const basePrice = cleanNum(item.price);
+                const discountP = cleanNum(item.discountPrice);
                 const finalP = discountP > 0 ? discountP : basePrice;
 
                 grouped[key].variants.push({
-                    size: cleanSize(item.size || item.Size || item['القياس']),
-                    thick: normalizeText(item.thick || item.Thick || item['السماكة']),
-                    unit: normalizeText(item.unit || item.Unit || item['الوحدة']),
+                    size: cleanSize(item.size),
+                    thick: String(item.thick || '').trim(),
+                    unit: String(item.unit || '').trim(),
                     price: basePrice,
                     finalPrice: finalP,
-                    available: normalizeText(item.available || item.Available || 'متوفر'),
-                    image: item.img || item.Image || grouped[key].image || ''
+                    available: String(item.available || 'متوفر').trim(),
+                    image: item.img || grouped[key].image || ''
                 });
             });
 
-            // الحفاظ على تسلسل التصنيفات والأصناف كما وردت في الملف الأصلي
             productData = orderKeys.map(k => grouped[k]);
             applyFilterAndRender();
         } catch (error) {
-            container.innerHTML = '<div class="error-state">حدث خطأ أثناء تحميل البيانات من الخادم.</div>';
+            container.innerHTML = '<div class="error-state">حدث خطأ أثناء تحميل البيانات.</div>';
         }
     }
 
@@ -335,7 +328,7 @@
         const filterContainer = document.getElementById('filter-buttons-container');
         const types = [];
         rawProducts.forEach(p => {
-            const t = normalizeText(p.type || p.Type || 'عام');
+            const t = String(p.type || 'عام').trim();
             if (t && !types.includes(t)) {
                 types.push(t);
             }
@@ -387,7 +380,6 @@
         }
 
         products.forEach((p, pIndex) => {
-            // فرز القياسات تصاعدياً
             const uniqueSizes = [...new Set(p.variants.map(v => v.size))].filter(s => s !== '').sort(naturalSort);
             
             const card = document.createElement('div');
@@ -395,7 +387,7 @@
             card.innerHTML = `
                 <div>
                     <div class="img-box">
-                        <img id="img-${pIndex}" src="${p.image || 'https://via.placeholder.com/150'}" alt="${escapeHtml(p.name)}">
+                        <img id="img-${pIndex}" src="${p.image || 'https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png'}" alt="${escapeHtml(p.name)}">
                     </div>
                     <div class="product-title">${escapeHtml(p.name)}</div>
                     <div style="text-align:center; margin-bottom:4px;" id="status-${pIndex}"></div>
@@ -438,9 +430,9 @@
 
         const sizeSelect = document.getElementById(`size-${pIndex}`);
         const thickSelect = document.getElementById(`thick-${pIndex}`);
-        const selectedSize = normalizeText(sizeSelect.value);
+        const selectedSize = String(sizeSelect.value || '').trim();
 
-        const matchingVariants = p.variants.filter(v => normalizeText(v.size) === selectedSize);
+        const matchingVariants = p.variants.filter(v => v.size === selectedSize);
         matchingVariants.sort((a, b) => {
             let valA = `${a.thick} ${a.unit}`.trim();
             let valB = `${b.thick} ${b.unit}`.trim();
@@ -464,28 +456,30 @@
         const p = list[pIndex];
         if (!p || !p.variants.length) return null;
 
-        const sizeVal = normalizeText(document.getElementById(`size-${pIndex}`).value);
+        const sizeVal = String(document.getElementById(`size-${pIndex}`).value || '').trim();
         const thickVal = String(document.getElementById(`thick-${pIndex}`).value || '');
         const [thick, unit] = thickVal.split('||');
 
         let match = p.variants.find(v => 
-            normalizeText(v.size) === sizeVal &&
-            normalizeText(v.thick) === normalizeText(thick) &&
-            normalizeText(v.unit) === normalizeText(unit)
+            v.size === sizeVal &&
+            v.thick === (thick || '').trim() &&
+            v.unit === (unit || '').trim()
         );
 
-        return match || p.variants.find(v => normalizeText(v.size) === sizeVal) || p.variants[0];
+        return match || p.variants.find(v => v.size === sizeVal) || p.variants[0];
     }
 
     function updatePrice(pIndex) {
+        const list = getFilteredList();
+        const p = list[pIndex];
         const match = getSelectedVariant(pIndex);
-        if (!match) return;
+        if (!p || !match) return;
 
         const qty = Math.max(1, parseInt(document.getElementById(`qty-${pIndex}`).value) || 1);
 
-        if (match.image) {
-            document.getElementById(`img-${pIndex}`).src = match.image;
-        }
+        // تثبيت الصورة: إن وُجدت صورة خاصة بالخيار استخدمها، وإلا صورة الصنف الأساسية، وإلا الشعار الافتراضي
+        const targetImg = match.image || p.image || 'https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png';
+        document.getElementById(`img-${pIndex}`).src = targetImg;
 
         const totalOrig = match.price * qty;
         const totalFinal = match.finalPrice * qty;
@@ -506,7 +500,7 @@
 
         const statusContainer = document.getElementById(`status-${pIndex}`);
         const addBtn = document.getElementById(`addBtn-${pIndex}`);
-        const isAvailable = (normalizeText(match.available) !== 'غير متوفر');
+        const isAvailable = (String(match.available).trim() !== 'غير متوفر');
 
         if (isAvailable) {
             statusContainer.innerHTML = '<span class="status-badge status-available">متوفر</span>';
@@ -524,7 +518,7 @@
         const p = list[pIndex];
         const match = getSelectedVariant(pIndex);
         
-        if (!p || !match || normalizeText(match.available) === 'غير متوفر') return;
+        if (!p || !match || String(match.available).trim() === 'غير متوفر') return;
 
         const qty = Math.max(1, parseInt(document.getElementById(`qty-${pIndex}`).value) || 1);
 
