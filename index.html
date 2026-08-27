@@ -46,7 +46,7 @@
             margin: 0 auto;
         }
 
-        /* بطاقة المنتج بخلفية بيج ناعمة */
+        /* بطاقة المنتج */
         .product-card {
             background: #faf7f2;
             padding: 10px;
@@ -58,7 +58,7 @@
             box-shadow: 0 3px 6px rgba(0,0,0,0.04);
         }
 
-        /* حاوية الصورة بخلفية بيضاء */
+        /* حاوية الصورة */
         .product-card .img-box {
             width: 100%;
             height: 95px;
@@ -137,7 +137,7 @@
         }
         select:focus, input:focus { border-color: #ff9900; }
 
-        /* حاوية الأسعار بتنسيق دافئ */
+        /* حاوية الأسعار */
         .price-container {
             background: #fffbeb;
             padding: 6px;
@@ -268,27 +268,56 @@
         return String(text || '').replace(/"/g, '&quot;');
     }
 
+    // دالة تحويل القياس (سواء كان كسراً أو رقماً عادياً) إلى قيمة عددية للمقارنة
+    function parseSizeValue(val) {
+        if (!val) return 0;
+        const str = String(val).trim().replace(/"/g, '');
+        if (str.includes('/')) {
+            const parts = str.split('/');
+            const num = parseFloat(parts[0]);
+            const den = parseFloat(parts[1]);
+            if (!isNaN(num) && !isNaN(den) && den !== 0) return num / den;
+        }
+        const parsed = parseFloat(str);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+
+    // دالة فرز تصاعدي ذكية للقياسات
+    function naturalSort(a, b) {
+        const valA = parseSizeValue(a);
+        const valB = parseSizeValue(b);
+        if (valA !== valB) {
+            return valA - valB;
+        }
+        return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+    }
+
     async function fetchProducts() {
         const container = document.getElementById('products-container');
         try {
-            const response = await fetch(`${SCRIPT_URL}?action=getProducts`);
+            const response = await fetch(`${SCRIPT_URL}?action=getProducts&t=${Date.now()}`, { cache: 'no-store' });
             const resData = await response.json();
             const rawProducts = resData.data || [];
             
             renderFilterButtons(rawProducts);
 
             let grouped = {};
+            let orderKeys = [];
+
             rawProducts.forEach(item => {
                 if (!item.name || !item.id) return;
-                const key = `${item.type}_${item.name}`.trim();
+                const type = String(item.type || 'عام').trim();
+                const name = String(item.name).trim();
+                const key = `${type}_${name}`;
                 
                 if (!grouped[key]) {
                     grouped[key] = {
-                        name: item.name,
-                        type: item.type,
+                        name: name,
+                        type: type,
                         image: item.img || '',
                         variants: []
                     };
+                    orderKeys.push(key);
                 }
                 if (!grouped[key].image && item.img) {
                     grouped[key].image = item.img;
@@ -310,7 +339,7 @@
                 });
             });
 
-            productData = Object.values(grouped);
+            productData = orderKeys.map(k => grouped[k]);
             applyFilterAndRender();
         } catch (error) {
             container.innerHTML = '<div class="error-state">حدث خطأ أثناء تحميل البيانات.</div>';
@@ -319,7 +348,13 @@
 
     function renderFilterButtons(rawProducts) {
         const filterContainer = document.getElementById('filter-buttons-container');
-        const types = [...new Set(rawProducts.map(p => String(p.type || '').trim()))].filter(t => t !== '');
+        const types = [];
+        rawProducts.forEach(p => {
+            const t = String(p.type || '').trim();
+            if (t && !types.includes(t)) {
+                types.push(t);
+            }
+        });
         
         let html = `<button class="filter-btn ${currentFilter === 'الكل' ? 'active' : ''}" onclick="filterProducts('الكل', this)">الكل</button>`;
         types.forEach(type => {
@@ -367,14 +402,17 @@
         }
 
         products.forEach((p, pIndex) => {
-            const uniqueSizes = [...new Set(p.variants.map(v => String(v.size || '').trim()))].filter(s => s !== '');
+            // فرز القياسات تصاعدياً
+            const uniqueSizes = [...new Set(p.variants.map(v => String(v.size || '').trim()))]
+                .filter(s => s !== '')
+                .sort(naturalSort);
             
             const card = document.createElement('div');
             card.className = 'product-card';
             card.innerHTML = `
                 <div>
                     <div class="img-box">
-                        <img id="img-${pIndex}" src="${p.image || 'https://via.placeholder.com/150'}" alt="${escapeHtml(p.name)}">
+                        <img id="img-${pIndex}" src="${p.image || 'https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png'}" alt="${escapeHtml(p.name)}">
                     </div>
                     <div class="product-title">${escapeHtml(p.name)}</div>
                     <div style="text-align:center; margin-bottom:4px;" id="status-${pIndex}"></div>
@@ -421,6 +459,11 @@
 
         const matchingVariants = p.variants.filter(v => String(v.size || '').trim() === selectedSize);
         
+        // فرز السماكات تصاعدياً
+        matchingVariants.sort((a, b) => {
+            return naturalSort(a.thick, b.thick);
+        });
+
         thickSelect.innerHTML = '';
         matchingVariants.forEach((v, vIdx) => {
             const opt = document.createElement('option');
@@ -449,9 +492,8 @@
         }
         if (!match) return;
 
-        if (match.image) {
-            document.getElementById(`img-${pIndex}`).src = match.image;
-        }
+        const targetImg = match.image || p.image || 'https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png';
+        document.getElementById(`img-${pIndex}`).src = targetImg;
 
         const totalOrig = match.price * qty;
         const totalFinal = match.finalPrice * qty;
