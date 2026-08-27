@@ -85,7 +85,7 @@
             text-align: center;
             margin-bottom: 4px;
             color: #2c2520;
-            height: 38px;
+            min-height: 38px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -268,67 +268,82 @@
         return String(text || '').replace(/"/g, '&quot;');
     }
 
-    // ترتيب تصاعدي للأرقام والمقاسات والنصوص
+    // دالة لترتيب المقاسات تصاعدياً
     function naturalSort(a, b) {
-        return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+        return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
     }
 
     async function fetchProducts() {
         const container = document.getElementById('products-container');
         try {
-            const response = await fetch(`${SCRIPT_URL}?action=getProducts`);
+            // إضافة timestamp لكسر الكاش فوراً
+            const response = await fetch(`${SCRIPT_URL}?action=getProducts&t=${Date.now()}`, { cache: 'no-store' });
             const resData = await response.json();
             const rawProducts = resData.data || [];
             
+            if (rawProducts.length === 0) {
+                container.innerHTML = '<div class="error-state">لا توجد بيانات متاحة حالياً.</div>';
+                return;
+            }
+
             renderFilterButtons(rawProducts);
 
             let grouped = {};
+            let orderKeys = []; // للحفاظ على نفس ترتيب الورود في جدول البيانات
+
             rawProducts.forEach(item => {
-                // الاعتماد على الاسم فقط دون الحاجة لأي ID
-                const name = String(item.name || '').trim();
+                const name = String(item.name || item.Name || item['الاسم'] || '').trim();
                 if (!name) return;
                 
-                const type = String(item.type || 'عام').trim();
-                const key = `${type}_${name}`;
+                const type = String(item.type || item.Type || item['النوع'] || 'عام').trim();
+                const key = `${type}_${name}`.trim();
 
                 if (!grouped[key]) {
                     grouped[key] = {
                         name: name,
                         type: type,
-                        image: item.img || '',
+                        image: item.img || item.Image || '',
                         variants: []
                     };
+                    orderKeys.push(key);
                 }
-                if (!grouped[key].image && item.img) {
-                    grouped[key].image = item.img;
+                if (!grouped[key].image && (item.img || item.Image)) {
+                    grouped[key].image = item.img || item.Image;
                 }
 
-                const basePrice = cleanNum(item.price);
-                const discountP = cleanNum(item.discountPrice);
+                const basePrice = cleanNum(item.price || item.Price || item['السعر']);
+                const discountP = cleanNum(item.discountPrice || item.DiscountPrice);
                 const finalP = discountP > 0 ? discountP : basePrice;
 
                 grouped[key].variants.push({
-                    size: String(item.size || 'قياسي').trim(),
-                    thick: String(item.thick || '').trim(),
-                    unit: String(item.unit || '').trim(),
+                    size: String(item.size || item.Size || item['القياس'] || 'قياسي').trim(),
+                    thick: String(item.thick || item.Thick || item['السماكة'] || '').trim(),
+                    unit: String(item.unit || item.Unit || item['الوحدة'] || '').trim(),
                     price: basePrice,
                     finalPrice: finalP,
-                    available: String(item.available || 'متوفر').trim(),
-                    image: item.img || grouped[key].image || ''
+                    available: String(item.available || item.Available || 'متوفر').trim(),
+                    image: item.img || item.Image || grouped[key].image || ''
                 });
             });
 
-            // ترتيب أسماء المنتجات أبجدياً
-            productData = Object.values(grouped).sort((a, b) => naturalSort(a.name, b.name));
+            // الحفاظ على ترتيب الأصناف والتصنيفات كما هي في الشيت
+            productData = orderKeys.map(k => grouped[k]);
             applyFilterAndRender();
         } catch (error) {
-            container.innerHTML = '<div class="error-state">حدث خطأ أثناء تحميل البيانات.</div>';
+            container.innerHTML = '<div class="error-state">حدث خطأ أثناء تحميل البيانات من الخادم.</div>';
         }
     }
 
     function renderFilterButtons(rawProducts) {
         const filterContainer = document.getElementById('filter-buttons-container');
-        const types = [...new Set(rawProducts.map(p => String(p.type || 'عام').trim()))].filter(t => t !== '');
+        // استخراج التصنيفات بنفس ترتيب ورودها في الشيت
+        const types = [];
+        rawProducts.forEach(p => {
+            const t = String(p.type || p.Type || 'عام').trim();
+            if (t && !types.includes(t)) {
+                types.push(t);
+            }
+        });
         
         let html = `<button class="filter-btn ${currentFilter === 'الكل' ? 'active' : ''}" onclick="filterProducts('الكل', this)">الكل</button>`;
         types.forEach(type => {
@@ -376,7 +391,7 @@
         }
 
         products.forEach((p, pIndex) => {
-            // استخراج القياسات الفريدة وترتيبها تصاعدياً
+            // استخراج القياسات الفريدة وترتيبها تصاعدياً داخل الحقل فقط
             const uniqueSizes = [...new Set(p.variants.map(v => String(v.size || 'قياسي').trim()))]
                 .filter(s => s !== '')
                 .sort(naturalSort);
@@ -431,10 +446,8 @@
         const thickSelect = document.getElementById(`thick-${pIndex}`);
         const selectedSize = String(sizeSelect.value || '').trim();
 
-        // تصفية المتغيرات التابعة للقياس المختار
+        // تصفية المتغيرات التابعة للمقاس المختار وترتيبها تصاعدياً
         const matchingVariants = p.variants.filter(v => String(v.size || '').trim() === selectedSize);
-        
-        // ترتيب السماكات / الوحدات تصاعدياً
         matchingVariants.sort((a, b) => {
             let valA = `${a.thick} ${a.unit}`.trim();
             let valB = `${b.thick} ${b.unit}`.trim();
@@ -522,7 +535,6 @@
 
         const qty = Math.max(1, parseInt(document.getElementById(`qty-${pIndex}`).value) || 1);
 
-        // التحقق إذا كان نفس المنتج ونفس القياس والسماكة موجود مسبقاً في السلة لزيادة الكمية
         const existingIndex = cart.findIndex(item => 
             item.name === p.name && 
             item.size === match.size && 
