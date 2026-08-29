@@ -61,7 +61,7 @@
     .field-card.avail { background: var(--group-avail-bg); border-color: var(--group-avail-border); }
     .field-card.img-sec { background: var(--group-img-bg); border-color: var(--group-img-border); }
 
-    .form-group { margin-bottom: 10px; }
+    .form-group { margin-bottom: 10px; position: relative; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 
@@ -74,6 +74,11 @@
 
     input, select { width: 100%; padding: 10px 12px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; color: var(--text-main); font-size: 0.95rem; outline: none; }
     input:focus, select:focus { border-color: var(--primary); }
+
+    /* تنسيق قائمة الاقتراحات المخصصة للبحث السريع */
+    .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: #ffffff; border: 1.5px solid var(--primary); border-top: none; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
+    .autocomplete-item { padding: 10px 12px; font-size: 0.9rem; border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--text-main); }
+    .autocomplete-item:hover { background: #f0f9ff; color: var(--primary); }
 
     .upload-box { border: 2px dashed #94a3b8; background: #ffffff; padding: 14px; text-align: center; border-radius: 8px; cursor: pointer; color: #475569; font-size: 0.9rem; display: block; font-weight: 700; }
     .img-preview { width: 100%; max-height: 160px; object-fit: contain; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 10px; display: none; }
@@ -115,14 +120,23 @@
       <input type="hidden" id="existingImgUrl">
 
       <div class="field-card info">
-        <div id="selectProductGroup" class="form-group">
-          <label>اختر المنتج المراد تعديله:</label>
-          <select id="productSelect" onchange="onProductSelectChange()">
-            <option value="">-- جاري تحميل الأصناف... --</option>
-          </select>
+        <!-- حقول التصفية المسبقة والبحث التنبؤي -->
+        <div id="selectProductGroup">
+          <div class="form-group">
+            <label>1. تصفية حسب التصنيف:</label>
+            <select id="filterCategory" onchange="onCategoryFilterChange()">
+              <option value="">-- كل التصنيفات --</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>2. ابحث عن اسم الصنف أو القياس:</label>
+            <input type="text" id="searchProductInput" placeholder="اكتب للبحث السريع..." autocomplete="off" oninput="onSearchInput()" onfocus="onSearchInput()">
+            <div id="autocompleteList" class="autocomplete-list"></div>
+          </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" style="margin-top: 12px;">
           <label>التصنيف / النوع *</label>
           <input list="typeList" id="pType" required placeholder="PPR, PVC, كهرباء...">
           <datalist id="typeList">
@@ -258,32 +272,73 @@
       const res = await fetch(`${SCRIPT_URL}?action=getProducts&t=${Date.now()}`, { cache: 'no-store' });
       const data = await res.json();
       allProducts = data.data || [];
-      populateDropdown();
+      populateCategoryFilter();
     } catch (err) {
       console.error("خطأ في جلب البيانات:", err);
     }
   }
 
-  function populateDropdown() {
-    const select = document.getElementById('productSelect');
-    select.innerHTML = '<option value="">-- اختر صنفاً للتعديل --</option>';
-    allProducts.forEach(p => {
+  // تعبئة قائمة التصنيفات آلياً بناءً على البيانات القادمة من جوجل شيت
+  function populateCategoryFilter() {
+    const filterSelect = document.getElementById('filterCategory');
+    const currentVal = filterSelect.value;
+    filterSelect.innerHTML = '<option value="">-- كل التصنيفات --</option>';
+    
+    // استخراج التصنيفات الفريدة آلياً
+    const categories = [...new Set(allProducts.map(p => p.type).filter(Boolean))];
+    categories.sort().forEach(cat => {
       const opt = document.createElement('option');
-      opt.value = p.id;
-      const statusBadge = (p.available === 'غير متوفر') ? ' [❌ غير متوفر]' : '';
-      opt.textContent = `[${p.type}] ${p.name} (${p.size} - ${p.thick || ''}) - $${p.discountPrice}${statusBadge}`;
-      select.appendChild(opt);
+      opt.value = cat;
+      opt.textContent = cat;
+      filterSelect.appendChild(opt);
     });
+    filterSelect.value = currentVal;
   }
 
-  function onProductSelectChange() {
-    const id = document.getElementById('productSelect').value;
-    const p = allProducts.find(item => item.id == id);
-    if (!p) {
-      document.getElementById('pId').value = '';
-      document.getElementById('existingImgUrl').value = '';
+  // عند تغير فلتر التصنيف، إعادة ضبط حقل البحث التنبؤي
+  function onCategoryFilterChange() {
+    document.getElementById('searchProductInput').value = '';
+    document.getElementById('autocompleteList').style.display = 'none';
+  }
+
+  // تشغيل البحث التنبؤي الذكي مع مراعاة الفلتر المسبق
+  function onSearchInput() {
+    const query = document.getElementById('searchProductInput').value.toLowerCase().trim();
+    const selectedCat = document.getElementById('filterCategory').value;
+    const listDiv = document.getElementById('autocompleteList');
+
+    // فلترة المنتجات حسب التصنيف أولاً، ثم حسب مطابقة الاسم أو القياس ثانياً
+    const filtered = allProducts.filter(p => {
+      const matchCat = !selectedCat || p.type === selectedCat;
+      const textToSearch = `${p.type || ''} ${p.name || ''} ${p.size || ''} ${p.thick || ''}`.toLowerCase();
+      const matchQuery = textToSearch.includes(query);
+      return matchCat && matchQuery;
+    });
+
+    if (filtered.length === 0 || query === '') {
+      listDiv.innerHTML = '';
+      listDiv.style.display = 'none';
       return;
     }
+
+    let html = '';
+    filtered.forEach(p => {
+      const statusBadge = (p.available === 'غير متوفر') ? ' [❌ غير متوفر]' : '';
+      const displayText = `[${p.type}] ${p.name} (${p.size} - ${p.thick || ''}) - $${p.discountPrice}${statusBadge}`;
+      html += `<div class="autocomplete-item" onclick="selectProduct('${p.id}')">${displayText}</div>`;
+    });
+
+    listDiv.innerHTML = html;
+    listDiv.style.display = 'block';
+  }
+
+  // عند اختيار صنف معين من قائمة النتائج التنبؤية
+  function selectProduct(id) {
+    const p = allProducts.find(item => item.id == id);
+    if (!p) return;
+
+    document.getElementById('searchProductInput').value = `[${p.type}] ${p.name} (${p.size})`;
+    document.getElementById('autocompleteList').style.display = 'none';
 
     document.getElementById('pId').value = p.id || '';
     document.getElementById('existingImgUrl').value = p.img || '';
@@ -308,6 +363,14 @@
       prev.style.display = 'none';
     }
   }
+
+  // إخفاء قائمة الاقتراحات عند النقر خارجها
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#selectProductGroup')) {
+      const listDiv = document.getElementById('autocompleteList');
+      if (listDiv) listDiv.style.display = 'none';
+    }
+  });
 
   function calcFinalPrice() {
     const price = parseFloat(document.getElementById('pPrice').value) || 0;
@@ -337,6 +400,7 @@
     document.getElementById('pId').value = '';
     document.getElementById('existingImgUrl').value = '';
     document.getElementById('pPreview').style.display = 'none';
+    document.getElementById('autocompleteList').style.display = 'none';
   }
 
   function previewImg(input) {
@@ -361,7 +425,7 @@
     e.preventDefault();
 
     if (currentMode === 'edit' && !document.getElementById('pId').value) {
-      alert('يرجى اختيار صنف من القائمة أولاً للتعديل!');
+      alert('يرجى اختيار صنف من قائمة البحث أولاً للتعديل!');
       return;
     }
 
