@@ -232,7 +232,7 @@
 
 <div class="cart-section">
     <div id="total-cart-price" style="font-weight:bold; text-align:center; font-size:0.9rem; margin-bottom:4px;">المجموع: 0.000$</div>
-    <ul id="cart-list" style="margin:0 0 6px; padding:0; font-size:0.75rem; max-height:45px; overflow-y:auto;"></ul>
+    <ul id="cart-list" style="margin:0 0 6px; padding:0; font-size:0.75rem; max-height:60px; overflow-y:auto; list-style-position: inside;"></ul>
     <div class="cart-inputs">
         <input type="text" id="cust-name" placeholder="الاسم">
         <input type="text" id="cust-phone" placeholder="الهاتف">
@@ -544,14 +544,37 @@
 
     function updateCartList() {
         const list = document.getElementById('cart-list');
-        let total = 0;
+        let totalFinal = 0;
+        let totalOriginal = 0;
+
         list.innerHTML = cart.map(i => {
-            let sub = i.finalPrice * i.qty;
-            total += sub;
+            const subOrig = i.price * i.qty;
+            const subFinal = i.finalPrice * i.qty;
+            
+            totalOriginal += subOrig;
+            totalFinal += subFinal;
+
             const spec = i.thick ? ` (${i.size} - ${i.thick} ${i.unit})` : ` (${i.size})`;
-            return `<li>${escapeHtml(i.name)}${spec} - ${i.qty}× - ${sub.toFixed(3)}$</li>`;
+            
+            let unitPriceDisplay = '';
+            let subPriceDisplay = '';
+
+            if (i.price > i.finalPrice) {
+                unitPriceDisplay = `<span style="text-decoration: line-through; color: #ef4444; font-size: 0.65rem;">${i.price.toFixed(3)}$</span> <span style="color: #15803d; font-weight: bold;">${i.finalPrice.toFixed(3)}$</span>`;
+                subPriceDisplay = `<span style="text-decoration: line-through; color: #ef4444; font-size: 0.65rem;">${subOrig.toFixed(3)}$</span> <strong style="color: #15803d;">${subFinal.toFixed(3)}$</strong>`;
+            } else {
+                unitPriceDisplay = `<span>${i.finalPrice.toFixed(3)}$</span>`;
+                subPriceDisplay = `<strong style="color: #b45309;">${subFinal.toFixed(3)}$</strong>`;
+            }
+
+            return `<li>${escapeHtml(i.name)}${spec} | القطعة: [${unitPriceDisplay}] × ${i.qty} = ${subPriceDisplay}</li>`;
         }).join('');
-        document.getElementById('total-cart-price').innerText = `المجموع: ${total.toFixed(3)}$`;
+
+        if (totalOriginal > totalFinal) {
+            document.getElementById('total-cart-price').innerHTML = `المجموع: <span style="text-decoration: line-through; color: #ef4444; font-size: 0.8rem;">${totalOriginal.toFixed(3)}$</span> <span style="color: #15803d;">${totalFinal.toFixed(3)}$</span>`;
+        } else {
+            document.getElementById('total-cart-price').innerText = `المجموع: ${totalFinal.toFixed(3)}$`;
+        }
     }
 
     function sendWhatsApp() {
@@ -562,15 +585,37 @@
         if(!n || !p || !a) return alert("يرجى تعبئة جميع بيانات العميل");
         if(cart.length === 0) return alert("السلة فارغة!");
         
-        let total = 0;
+        let totalFinal = 0;
+        let totalOriginal = 0;
         let msg = `*طلب جديد من مصنع صهيب للصناعات البلاستيكية(Hririplast)*%0A%0Aالعميل: ${n}%0Aالهاتف: ${p}%0Aالعنوان: ${a}%0A---%0A`;
+        
         cart.forEach(i => { 
-            let sub = i.finalPrice * i.qty; 
-            total += sub; 
+            let subOrig = i.price * i.qty; 
+            let subFinal = i.finalPrice * i.qty; 
+            totalOriginal += subOrig; 
+            totalFinal += subFinal; 
+
             let spec = i.thick ? `${i.thick} ${i.unit || ''}`.trim() : (i.unit || '');
-            msg += `• ${i.name} (${i.size}${spec ? ' / ' + spec : ''}) - ${i.qty}× - ${sub.toFixed(3)}$%0A`; 
+            let specStr = spec ? ` (${i.size} / ${spec})` : ` (${i.size})`;
+            
+            msg += `• ${i.name}${specStr}%0A`;
+            if (i.price > i.finalPrice) {
+                msg += `  سعر القطعة: ~${i.price.toFixed(3)}$~ *${i.finalPrice.toFixed(3)}$*%0A`;
+                msg += `  الكمية: ${i.qty} | الإجمالي: ~${subOrig.toFixed(3)}$~ *${subFinal.toFixed(3)}$*%0A`;
+            } else {
+                msg += `  سعر القطعة: *${i.finalPrice.toFixed(3)}$*%0A`;
+                msg += `  الكمية: ${i.qty} | الإجمالي: *${subFinal.toFixed(3)}$*%0A`;
+            }
         });
-        msg += `%0A*الإجمالي الكلي: ${total.toFixed(3)}$*`;
+
+        msg += `%0A---%0A`;
+        if (totalOriginal > totalFinal) {
+            msg += `*الإجمالي قبل الحسم: ~${totalOriginal.toFixed(3)}$~*%0A`;
+            msg += `*الإجمالي النهائي: ${totalFinal.toFixed(3)}$*`;
+        } else {
+            msg += `*الإجمالي الكلي: ${totalFinal.toFixed(3)}$*`;
+        }
+
         window.open(`https://wa.me/963941574544?text=${msg}`, '_blank');
     }
 
