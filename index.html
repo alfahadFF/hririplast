@@ -14,7 +14,7 @@
     <link rel="apple-touch-icon" href="https://res.cloudinary.com/dvzg70krq/image/upload/v1786262671/icon-192_jlxxg3.png">
     
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: #f4f6f8; padding-bottom: 270px; }
         .hero { background: #111; color: white; text-align: center; }
         .hero-banner { width: 100%; max-height: 200px; object-fit: cover; }
@@ -59,6 +59,10 @@
             position: relative;
         }
 
+        .product-card.card-active {
+            z-index: 50;
+        }
+
         .product-card .img-box {
             position: relative;
             width: 100%;
@@ -93,7 +97,7 @@
             line-height: 1.2;
         }
 
-        /* صف الحقول المتجانبة */
+        /* صف الحقول */
         .fields-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -108,6 +112,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+            position: relative;
         }
 
         .field-group.fg-size { background: #f0f7ff; border-color: #d0e5ff; }
@@ -129,7 +134,7 @@
             display: block;
         }
 
-        select, input {
+        input {
             width: 100%;
             padding: 5px 4px;
             border: 1px solid #cbd5e1;
@@ -139,7 +144,77 @@
             outline: none;
             color: #1e293b;
         }
-        select:focus, input:focus { border-color: #ff9900; }
+        input:focus { border-color: #ff9900; }
+
+        /* القوائم المخصصة بديلة الـ select الأصلية */
+        .custom-select-box {
+            position: relative;
+            width: 100%;
+            user-select: none;
+        }
+
+        .custom-select-trigger {
+            width: 100%;
+            padding: 5px 6px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            background: #ffffff;
+            color: #1e293b;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .custom-select-trigger::after {
+            content: '▾';
+            font-size: 0.65rem;
+            color: #64748b;
+            margin-right: 4px;
+        }
+
+        .custom-options-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            margin-top: 3px;
+            max-height: 140px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+        }
+
+        .custom-options-menu.open {
+            display: block;
+        }
+
+        .custom-option {
+            padding: 6px 8px;
+            font-size: 0.72rem;
+            color: #1e293b;
+            cursor: pointer;
+            transition: background 0.15s;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .custom-option:last-child {
+            border-bottom: none;
+        }
+
+        .custom-option:hover, .custom-option.selected {
+            background: #ffedd5;
+            color: #c2410c;
+            font-weight: bold;
+        }
 
         /* حاوية الأسعار */
         .price-container {
@@ -200,7 +275,7 @@
         .cart-section {
             position: fixed; bottom: 0; left: 0; right: 0;
             background: white; padding: 8px 12px;
-            border-top: 2px solid #ff9900; z-index: 1000;
+            border-top: 2px solid #ff9900; z-index: 2000;
             box-shadow: 0 -4px 15px rgba(0,0,0,0.12);
         }
         
@@ -336,8 +411,30 @@
     let currentFilter = 'الكل';
     let searchQuery = '';
 
-    // قائمة نسب الحسم المنسدلة
     const DISCOUNT_OPTIONS = [0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30];
+
+    // إغلاق أي قائمة مفتوحة عند النقر خارجها
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.custom-select-box')) {
+            closeAllCustomSelects();
+        }
+    });
+
+    function closeAllCustomSelects() {
+        document.querySelectorAll('.custom-options-menu').forEach(menu => menu.classList.remove('open'));
+        document.querySelectorAll('.product-card').forEach(card => card.classList.remove('card-active'));
+    }
+
+    function toggleCustomSelect(menuId, cardIdx) {
+        const menu = document.getElementById(menuId);
+        const isOpen = menu.classList.contains('open');
+        closeAllCustomSelects();
+        if (!isOpen) {
+            menu.classList.add('open');
+            const card = document.querySelector(`.product-card[data-index="${cardIdx}"]`);
+            if (card) card.classList.add('card-active');
+        }
+    }
 
     function cleanNum(val) {
         if (val === undefined || val === null || val === '') return 0;
@@ -483,9 +580,12 @@
                 .filter(s => s !== '')
                 .sort(naturalSort);
             
+            const firstSize = uniqueSizes[0] || '';
+
             const card = document.createElement('div');
             card.className = 'product-card';
             card.setAttribute('data-key', p.key);
+            card.setAttribute('data-index', idx);
 
             card.innerHTML = `
                 <div>
@@ -495,21 +595,31 @@
                     <div class="product-title">${escapeHtml(p.name)}</div>
                     <div style="text-align:center; margin-bottom:4px;" id="status-${idx}"></div>
 
-                    <!-- القياس والسماكة -->
+                    <!-- القياس والسماكة بقوائم مخصصة -->
                     <div class="fields-row">
                         <div class="field-group fg-size">
                             <label class="field-label">القياس</label>
-                            <select id="size-${idx}" onchange="populateThickDropdown('${escapeHtml(p.key)}', ${idx})">
-                                ${uniqueSizes.map(s => `<option value="${escapeHtml(s)}">${s}</option>`).join('')}
-                            </select>
+                            <div class="custom-select-box">
+                                <div class="custom-select-trigger" id="size-trigger-${idx}" onclick="toggleCustomSelect('size-options-${idx}', ${idx})">${firstSize}</div>
+                                <div class="custom-options-menu" id="size-options-${idx}">
+                                    ${uniqueSizes.map(s => `
+                                        <div class="custom-option ${s === firstSize ? 'selected' : ''}" onclick="selectCustomOption('size', '${escapeHtml(p.key)}', ${idx}, '${escapeHtml(s)}', '${escapeHtml(s)}')">${s}</div>
+                                    `).join('')}
+                                </div>
+                                <input type="hidden" id="size-${idx}" value="${escapeHtml(firstSize)}">
+                            </div>
                         </div>
                         <div class="field-group fg-thick">
                             <label class="field-label">السماكة / الوحدة</label>
-                            <select id="thick-${idx}" onchange="updatePrice('${escapeHtml(p.key)}', ${idx})"></select>
+                            <div class="custom-select-box">
+                                <div class="custom-select-trigger" id="thick-trigger-${idx}" onclick="toggleCustomSelect('thick-options-${idx}', ${idx})">--</div>
+                                <div class="custom-options-menu" id="thick-options-${idx}"></div>
+                                <input type="hidden" id="thick-${idx}" value="">
+                            </div>
                         </div>
                     </div>
 
-                    <!-- الكمية وقائمة الحسم المنسدلة -->
+                    <!-- الكمية ونسبة الحسم المخصصة -->
                     <div class="fields-row">
                         <div class="field-group fg-qty">
                             <label class="field-label">الكمية</label>
@@ -517,9 +627,15 @@
                         </div>
                         <div class="field-group fg-discount">
                             <label class="field-label">نسبة الحسم</label>
-                            <select id="discount-rate-${idx}" onchange="updatePrice('${escapeHtml(p.key)}', ${idx})">
-                                ${DISCOUNT_OPTIONS.map(opt => `<option value="${opt}">${opt === 0 ? 'بدون حسم' : opt + '%'}</option>`).join('')}
-                            </select>
+                            <div class="custom-select-box">
+                                <div class="custom-select-trigger" id="discount-trigger-${idx}" onclick="toggleCustomSelect('discount-options-${idx}', ${idx})">بدون حسم</div>
+                                <div class="custom-options-menu" id="discount-options-${idx}">
+                                    ${DISCOUNT_OPTIONS.map(opt => `
+                                        <div class="custom-option ${opt === 0 ? 'selected' : ''}" onclick="selectCustomOption('discount', '${escapeHtml(p.key)}', ${idx}, '${opt}', '${opt === 0 ? 'بدون حسم' : opt + '%'}')">${opt === 0 ? 'بدون حسم' : opt + '%'}</div>
+                                    `).join('')}
+                                </div>
+                                <input type="hidden" id="discount-rate-${idx}" value="0">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -538,29 +654,71 @@
         });
     }
 
+    function selectCustomOption(type, pKey, idx, val, label) {
+        if (type === 'size') {
+            document.getElementById(`size-${idx}`).value = val;
+            document.getElementById(`size-trigger-${idx}`).innerText = label;
+            
+            const options = document.querySelectorAll(`#size-options-${idx} .custom-option`);
+            options.forEach(opt => opt.classList.toggle('selected', opt.innerText.trim() === label.trim()));
+            
+            closeAllCustomSelects();
+            populateThickDropdown(pKey, idx);
+        } else if (type === 'thick') {
+            document.getElementById(`thick-${idx}`).value = val;
+            document.getElementById(`thick-trigger-${idx}`).innerText = label;
+            
+            const options = document.querySelectorAll(`#thick-options-${idx} .custom-option`);
+            options.forEach(opt => opt.classList.toggle('selected', opt.getAttribute('data-val') === String(val)));
+            
+            closeAllCustomSelects();
+            updatePrice(pKey, idx);
+        } else if (type === 'discount') {
+            document.getElementById(`discount-rate-${idx}`).value = val;
+            document.getElementById(`discount-trigger-${idx}`).innerText = label;
+            
+            const options = document.querySelectorAll(`#discount-options-${idx} .custom-option`);
+            options.forEach(opt => opt.classList.toggle('selected', opt.innerText.trim() === label.trim()));
+            
+            closeAllCustomSelects();
+            updatePrice(pKey, idx);
+        }
+    }
+
     function populateThickDropdown(pKey, idx) {
         const p = productData.find(item => item.key === pKey);
         if (!p) return;
 
-        const sizeSelect = document.getElementById(`size-${idx}`);
-        const thickSelect = document.getElementById(`thick-${idx}`);
-        if (!sizeSelect || !thickSelect) return;
+        const sizeInput = document.getElementById(`size-${idx}`);
+        const thickTrigger = document.getElementById(`thick-trigger-${idx}`);
+        const thickMenu = document.getElementById(`thick-options-${idx}`);
+        const thickInput = document.getElementById(`thick-${idx}`);
+        if (!sizeInput || !thickMenu) return;
 
-        const selectedSize = String(sizeSelect.value || '').trim();
+        const selectedSize = String(sizeInput.value || '').trim();
 
         let matchingVariants = p.variants.filter(v => String(v.size || '').trim() === selectedSize);
         if (matchingVariants.length === 0) matchingVariants = p.variants;
 
         matchingVariants.sort((a, b) => naturalSort(a.thick, b.thick));
 
-        thickSelect.innerHTML = '';
-        matchingVariants.forEach(v => {
-            const opt = document.createElement('option');
-            opt.value = v.id;
+        thickMenu.innerHTML = '';
+        matchingVariants.forEach((v, vIdx) => {
             let thickText = (v.thick && v.unit) ? `${v.thick} ${v.unit}` : (v.thick || v.unit || 'قياسي');
-            opt.textContent = thickText;
-            thickSelect.appendChild(opt);
+            const optDiv = document.createElement('div');
+            optDiv.className = `custom-option ${vIdx === 0 ? 'selected' : ''}`;
+            optDiv.setAttribute('data-val', v.id);
+            optDiv.innerText = thickText;
+            optDiv.onclick = () => selectCustomOption('thick', pKey, idx, v.id, thickText);
+            thickMenu.appendChild(optDiv);
         });
+
+        if (matchingVariants.length > 0) {
+            const first = matchingVariants[0];
+            let firstText = (first.thick && first.unit) ? `${first.thick} ${first.unit}` : (first.thick || first.unit || 'قياسي');
+            thickInput.value = first.id;
+            thickTrigger.innerText = firstText;
+        }
 
         updatePrice(pKey, idx);
     }
@@ -570,12 +728,12 @@
         if (!p) return;
 
         const sizeVal = String(document.getElementById(`size-${idx}`).value || '').trim();
-        const thickSelect = document.getElementById(`thick-${idx}`);
-        const selectedVariantId = thickSelect ? thickSelect.value : '';
+        const thickInput = document.getElementById(`thick-${idx}`);
+        const selectedVariantId = thickInput ? thickInput.value : '';
         const qty = Math.max(1, parseInt(document.getElementById(`qty-${idx}`).value) || 1);
         
-        const discountSelect = document.getElementById(`discount-rate-${idx}`);
-        const selectedPercent = discountSelect ? parseFloat(discountSelect.value) || 0 : 0;
+        const discountInput = document.getElementById(`discount-rate-${idx}`);
+        const selectedPercent = discountInput ? parseFloat(discountInput.value) || 0 : 0;
         const discountFraction = selectedPercent / 100;
 
         let match = p.variants.find(v => String(v.id) === String(selectedVariantId));
@@ -632,8 +790,8 @@
         
         if (!match || String(match.available).trim() === 'غير متوفر') return;
 
-        const discountSelect = document.getElementById(`discount-rate-${idx}`);
-        const selectedPercent = discountSelect ? parseFloat(discountSelect.value) || 0 : 0;
+        const discountInput = document.getElementById(`discount-rate-${idx}`);
+        const selectedPercent = discountInput ? parseFloat(discountInput.value) || 0 : 0;
         const discountRate = selectedPercent / 100;
         const finalUnitPrice = match.price * (1 - discountRate);
 
