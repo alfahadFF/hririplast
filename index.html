@@ -59,7 +59,7 @@
             position: relative;
         }
 
-        /* حاوية الصورة */
+        /* حاوية الصورة خالية من أي عناصر فوقها */
         .product-card .img-box {
             position: relative;
             width: 100%;
@@ -359,6 +359,14 @@
                 const finalP = discountP > 0 ? discountP : basePrice;
                 const thickVal = String(item.thick !== undefined ? item.thick : (item.thickness !== undefined ? item.thickness : '')).trim();
 
+                // قراءة القيمة الفعلية القادمة من العمود H مباشرة من الشيت
+                const rawDiscountVal = item.discountPercent !== undefined ? item.discountPercent :
+                                      (item.discountRate !== undefined ? item.discountRate :
+                                      (item.discountRateVal !== undefined ? item.discountRateVal :
+                                      (item.discount !== undefined ? item.discount :
+                                      (item.hasm !== undefined ? item.hasm :
+                                      (item.colH !== undefined ? item.colH : '')))));
+
                 grouped[key].variants.push({
                     id: id,
                     size: String(item.size || '').trim(),
@@ -366,6 +374,7 @@
                     unit: String(item.unit || '').trim(),
                     price: basePrice,
                     finalPrice: finalP,
+                    discountVal: rawDiscountVal, // القيمة الأصلية للعمود H
                     available: String(item.available || 'متوفر').trim(),
                     image: item.img || grouped[key].image || ''
                 });
@@ -444,7 +453,7 @@
 
             card.innerHTML = `
                 <div>
-                    <!-- صورة المنتج خالية من أي بادج -->
+                    <!-- صورة المنتج بدون أي بادج فوقها -->
                     <div class="img-box">
                         <img id="img-${idx}" src="${p.image || 'https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png'}" alt="${escapeHtml(p.name)}">
                     </div>
@@ -465,7 +474,7 @@
                         </div>
                     </div>
 
-                    <!-- السطر الثاني: الكمية ونسبة الحسم متجانبين -->
+                    <!-- السطر الثاني: الكمية ونسبة الحسم من العمود H متجانبين -->
                     <div class="fields-row" id="qty-discount-row-${idx}">
                         <div class="field-group fg-qty" id="qty-container-${idx}">
                             <label class="field-label">الكمية</label>
@@ -473,7 +482,7 @@
                         </div>
                         <div class="field-group fg-discount" id="discount-wrapper-${idx}" style="display:none;">
                             <label class="field-label">نسبة الحسم</label>
-                            <div class="discount-display" id="discount-badge-${idx}">0%</div>
+                            <div class="discount-display" id="discount-badge-${idx}">-</div>
                         </div>
                     </div>
                 </div>
@@ -502,13 +511,11 @@
 
         const selectedSize = String(sizeSelect.value || '').trim();
 
-        // تصفية المتغيرات التي تطابق القياس المختار
         let matchingVariants = p.variants.filter(v => String(v.size || '').trim() === selectedSize);
         if (matchingVariants.length === 0) {
             matchingVariants = p.variants;
         }
         
-        // ترتيب تصاعدي للسماكات
         matchingVariants.sort((a, b) => naturalSort(a.thick, b.thick));
 
         thickSelect.innerHTML = '';
@@ -538,7 +545,6 @@
         }
         if (!match) return;
 
-        // تحديث صورة المنتج في حال كان المتغير يملك صورة خاصة به
         const targetImg = match.image || p.image || 'https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png';
         document.getElementById(`img-${idx}`).src = targetImg;
 
@@ -551,23 +557,23 @@
         const discountBadge = document.getElementById(`discount-badge-${idx}`);
         const qtyRow = document.getElementById(`qty-discount-row-${idx}`);
 
-        // حساب نسبة الحسم بدقة
-        let discountPercent = 0;
-        if (match.price > match.finalPrice && match.price > 0) {
-            discountPercent = Math.round(((match.price - match.finalPrice) / match.price) * 100);
-        }
+        // التحقق من قيمة العمود H الفعلية من مصدر البيانات
+        let rawVal = match.discountVal !== undefined && match.discountVal !== null ? String(match.discountVal).trim() : '';
+        let cleanNumVal = cleanNum(rawVal);
 
-        // إظهار أو إخفاء حقل نسبة الحسم بجانب الكمية إذا كانت النسبة أكبر من صفر
-        if (discountPercent > 0) {
-            discountBadge.innerText = `خصم ${discountPercent}%`;
+        // إظهار الخانة فقط إذا كانت القيمة موجودة وأكبر من صفر
+        if (rawVal !== '' && rawVal !== '0' && cleanNumVal > 0) {
+            // تنسيق العرض: إن لم تكن تحوي % نضيفها للعرض
+            let displayVal = rawVal.includes('%') ? rawVal : `${rawVal}%`;
+            discountBadge.innerText = displayVal;
             discountWrapper.style.display = 'flex';
             qtyRow.style.gridTemplateColumns = '1fr 1fr';
         } else {
             discountWrapper.style.display = 'none';
-            qtyRow.style.gridTemplateColumns = '1fr'; // تتوسع خانة الكمية لتملأ العرض
+            qtyRow.style.gridTemplateColumns = '1fr';
         }
 
-        // إظهار الأسعار
+        // الأسعار
         if (totalOrig > totalFinal) {
             origElem.style.display = 'block';
             origElem.innerText = `${totalOrig.toFixed(3)}$`;
