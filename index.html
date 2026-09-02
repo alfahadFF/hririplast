@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>مصنع صهيب للصناعات البلاستيكية | Hririplast</title>
     
+    <!-- PWA & Apple Meta -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#111111">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -58,22 +59,6 @@
             position: relative;
         }
 
-        /* شارة نسبة الحسم */
-        .discount-badge {
-            position: absolute;
-            top: 6px;
-            right: 6px;
-            background: #ef4444;
-            color: #ffffff;
-            font-size: 0.65rem;
-            font-weight: 800;
-            padding: 2px 6px;
-            border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
-            z-index: 2;
-            display: none;
-        }
-
         /* حاوية الصورة */
         .product-card .img-box {
             position: relative;
@@ -109,12 +94,22 @@
             line-height: 1.2;
         }
 
+        /* صفوف الحقول المتجانبة */
+        .fields-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
         /* حقول متباينة الألوان */
         .field-group {
-            margin-bottom: 6px;
             padding: 4px 6px;
             border-radius: 6px;
             border: 1px solid transparent;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .field-group.fg-size {
@@ -135,6 +130,24 @@
         }
         .field-group.fg-qty .field-label { color: #7e22ce; }
 
+        .field-group.fg-discount {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+        .field-group.fg-discount .field-label { color: #dc2626; }
+
+        .discount-display {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px dashed #f87171;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-align: center;
+            padding: 5px 2px;
+            line-height: 1.2;
+        }
+
         .field-label {
             font-size: 0.65rem;
             font-weight: bold;
@@ -144,10 +157,10 @@
 
         select, input {
             width: 100%;
-            padding: 5px 6px;
+            padding: 5px 4px;
             border: 1px solid #cbd5e1;
             border-radius: 6px;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             background: #ffffff;
             outline: none;
             color: #1e293b;
@@ -232,6 +245,7 @@
         <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث عن صنف، قياس، أو كود..." oninput="onSearchInput()">
     </div>
 
+    <!-- حاوية أزرار الفلترة التلقائية -->
     <div class="filter-btns" id="filter-buttons-container">
         <button class="filter-btn active" onclick="filterProducts('الكل', this)">الكل</button>
     </div>
@@ -281,7 +295,7 @@
     }
 
     function escapeHtml(text) {
-        return String(text || '').replace(/"/g, '"');
+        return String(text || '').replace(/"/g, '&quot;');
     }
 
     function parseSizeValue(val) {
@@ -319,13 +333,16 @@
             let orderKeys = [];
 
             rawProducts.forEach(item => {
-                if (!item.name || !item.id) return;
+                const name = String(item.name || '').trim();
+                const id = String(item.id || '').trim();
+                if (!name || !id) return;
+
                 const type = String(item.type || 'عام').trim();
-                const name = String(item.name).trim();
                 const key = `${type}_${name}`;
                 
                 if (!grouped[key]) {
                     grouped[key] = {
+                        key: key,
                         name: name,
                         type: type,
                         image: item.img || '',
@@ -338,13 +355,14 @@
                 }
 
                 const basePrice = cleanNum(item.price);
-                const discountP = cleanNum(item.discountPrice);
+                const discountP = cleanNum(item.discountPrice !== undefined ? item.discountPrice : item.discount_price);
                 const finalP = discountP > 0 ? discountP : basePrice;
+                const thickVal = String(item.thick !== undefined ? item.thick : (item.thickness !== undefined ? item.thickness : '')).trim();
 
                 grouped[key].variants.push({
-                    id: String(item.id || '').trim(),
+                    id: id,
                     size: String(item.size || '').trim(),
-                    thick: String(item.thick || '').trim(),
+                    thick: thickVal,
                     unit: String(item.unit || '').trim(),
                     price: basePrice,
                     finalPrice: finalP,
@@ -415,89 +433,104 @@
             return;
         }
 
-        products.forEach((p, pIndex) => {
+        products.forEach((p, idx) => {
             const uniqueSizes = [...new Set(p.variants.map(v => String(v.size || '').trim()))]
                 .filter(s => s !== '')
                 .sort(naturalSort);
             
             const card = document.createElement('div');
             card.className = 'product-card';
+            card.setAttribute('data-key', p.key);
+
             card.innerHTML = `
                 <div>
+                    <!-- صورة المنتج خالية من أي بادج -->
                     <div class="img-box">
-                        <span class="discount-badge" id="discount-badge-${pIndex}"></span>
-                        <img id="img-${pIndex}" src="${p.image || 'https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png'}" alt="${escapeHtml(p.name)}">
+                        <img id="img-${idx}" src="${p.image || 'https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png'}" alt="${escapeHtml(p.name)}">
                     </div>
                     <div class="product-title">${escapeHtml(p.name)}</div>
-                    <div style="text-align:center; margin-bottom:4px;" id="status-${pIndex}"></div>
+                    <div style="text-align:center; margin-bottom:4px;" id="status-${idx}"></div>
 
-                    <div class="field-group fg-size">
-                        <label class="field-label">القياس</label>
-                        <select id="size-${pIndex}" onchange="populateThickDropdown(${pIndex})">
-                            ${uniqueSizes.map(s => `<option value="${escapeHtml(s)}">${s}</option>`).join('')}
-                        </select>
+                    <!-- السطر الأول: القياس والسماكة متجانبين -->
+                    <div class="fields-row">
+                        <div class="field-group fg-size">
+                            <label class="field-label">القياس</label>
+                            <select id="size-${idx}" onchange="populateThickDropdown('${escapeHtml(p.key)}', ${idx})">
+                                ${uniqueSizes.map(s => `<option value="${escapeHtml(s)}">${s}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="field-group fg-thick">
+                            <label class="field-label">السماكة / الوحدة</label>
+                            <select id="thick-${idx}" onchange="updatePrice('${escapeHtml(p.key)}', ${idx})"></select>
+                        </div>
                     </div>
 
-                    <div class="field-group fg-thick">
-                        <label class="field-label">السماكة / الوحدة</label>
-                        <select id="thick-${pIndex}" onchange="updatePrice(${pIndex})"></select>
-                    </div>
-
-                    <div class="field-group fg-qty">
-                        <label class="field-label">الكمية</label>
-                        <input type="number" id="qty-${pIndex}" value="1" min="1" oninput="updatePrice(${pIndex})">
+                    <!-- السطر الثاني: الكمية ونسبة الحسم متجانبين -->
+                    <div class="fields-row" id="qty-discount-row-${idx}">
+                        <div class="field-group fg-qty" id="qty-container-${idx}">
+                            <label class="field-label">الكمية</label>
+                            <input type="number" id="qty-${idx}" value="1" min="1" oninput="updatePrice('${escapeHtml(p.key)}', ${idx})">
+                        </div>
+                        <div class="field-group fg-discount" id="discount-wrapper-${idx}" style="display:none;">
+                            <label class="field-label">نسبة الحسم</label>
+                            <div class="discount-display" id="discount-badge-${idx}">0%</div>
+                        </div>
                     </div>
                 </div>
 
                 <div>
+                    <!-- حاوية الأسعار دون تغيير -->
                     <div class="price-container">
-                        <div class="original-price" id="orig-${pIndex}"></div>
-                        <div class="final-price" id="discount-${pIndex}">0.000$</div>
+                        <div class="original-price" id="orig-${idx}"></div>
+                        <div class="final-price" id="discount-${idx}">0.000$</div>
                     </div>
-                    <button class="add-btn" id="addBtn-${pIndex}" onclick="addToCart(${pIndex})">+ إضافة</button>
+                    <button class="add-btn" id="addBtn-${idx}" onclick="addToCart('${escapeHtml(p.key)}', ${idx})">+ إضافة</button>
                 </div>
             `;
             container.appendChild(card);
-            populateThickDropdown(pIndex);
+            populateThickDropdown(p.key, idx);
         });
     }
 
-    function populateThickDropdown(pIndex) {
-        const list = getFilteredList();
-        const p = list[pIndex];
+    function populateThickDropdown(pKey, idx) {
+        const p = productData.find(item => item.key === pKey);
         if (!p) return;
 
-        const sizeSelect = document.getElementById(`size-${pIndex}`);
-        const thickSelect = document.getElementById(`thick-${pIndex}`);
+        const sizeSelect = document.getElementById(`size-${idx}`);
+        const thickSelect = document.getElementById(`thick-${idx}`);
+        if (!sizeSelect || !thickSelect) return;
+
         const selectedSize = String(sizeSelect.value || '').trim();
 
-        const matchingVariants = p.variants.filter(v => String(v.size || '').trim() === selectedSize);
+        // تصفية المتغيرات التي تطابق القياس المختار
+        let matchingVariants = p.variants.filter(v => String(v.size || '').trim() === selectedSize);
+        if (matchingVariants.length === 0) {
+            matchingVariants = p.variants;
+        }
         
-        matchingVariants.sort((a, b) => {
-            return naturalSort(a.thick, b.thick);
-        });
+        // ترتيب تصاعدي للسماكات
+        matchingVariants.sort((a, b) => naturalSort(a.thick, b.thick));
 
         thickSelect.innerHTML = '';
-        matchingVariants.forEach((v, vIdx) => {
+        matchingVariants.forEach((v) => {
             const opt = document.createElement('option');
-            opt.value = v.id || vIdx;
+            opt.value = v.id;
             let thickText = (v.thick && v.unit) ? `${v.thick} ${v.unit}` : (v.thick || v.unit || 'قياسي');
             opt.textContent = thickText;
             thickSelect.appendChild(opt);
         });
 
-        updatePrice(pIndex);
+        updatePrice(pKey, idx);
     }
 
-    function updatePrice(pIndex) {
-        const list = getFilteredList();
-        const p = list[pIndex];
+    function updatePrice(pKey, idx) {
+        const p = productData.find(item => item.key === pKey);
         if (!p) return;
 
-        const sizeVal = String(document.getElementById(`size-${pIndex}`).value || '').trim();
-        const thickSelect = document.getElementById(`thick-${pIndex}`);
-        const selectedVariantId = thickSelect.value;
-        const qty = Math.max(1, parseInt(document.getElementById(`qty-${pIndex}`).value) || 1);
+        const sizeVal = String(document.getElementById(`size-${idx}`).value || '').trim();
+        const thickSelect = document.getElementById(`thick-${idx}`);
+        const selectedVariantId = thickSelect ? thickSelect.value : '';
+        const qty = Math.max(1, parseInt(document.getElementById(`qty-${idx}`).value) || 1);
 
         let match = p.variants.find(v => String(v.id) === String(selectedVariantId));
         if (!match) {
@@ -505,29 +538,36 @@
         }
         if (!match) return;
 
+        // تحديث صورة المنتج في حال كان المتغير يملك صورة خاصة به
         const targetImg = match.image || p.image || 'https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png';
-        document.getElementById(`img-${pIndex}`).src = targetImg;
+        document.getElementById(`img-${idx}`).src = targetImg;
 
         const totalOrig = match.price * qty;
         const totalFinal = match.finalPrice * qty;
 
-        const origElem = document.getElementById(`orig-${pIndex}`);
-        const finalElem = document.getElementById(`discount-${pIndex}`);
-        const discountBadge = document.getElementById(`discount-badge-${pIndex}`);
+        const origElem = document.getElementById(`orig-${idx}`);
+        const finalElem = document.getElementById(`discount-${idx}`);
+        const discountWrapper = document.getElementById(`discount-wrapper-${idx}`);
+        const discountBadge = document.getElementById(`discount-badge-${idx}`);
+        const qtyRow = document.getElementById(`qty-discount-row-${idx}`);
 
-        // حساب نسبة الحسم للمتغير المحدد
+        // حساب نسبة الحسم بدقة
         let discountPercent = 0;
         if (match.price > match.finalPrice && match.price > 0) {
             discountPercent = Math.round(((match.price - match.finalPrice) / match.price) * 100);
         }
 
+        // إظهار أو إخفاء حقل نسبة الحسم بجانب الكمية إذا كانت النسبة أكبر من صفر
         if (discountPercent > 0) {
             discountBadge.innerText = `خصم ${discountPercent}%`;
-            discountBadge.style.display = 'block';
+            discountWrapper.style.display = 'flex';
+            qtyRow.style.gridTemplateColumns = '1fr 1fr';
         } else {
-            discountBadge.style.display = 'none';
+            discountWrapper.style.display = 'none';
+            qtyRow.style.gridTemplateColumns = '1fr'; // تتوسع خانة الكمية لتملأ العرض
         }
 
+        // إظهار الأسعار
         if (totalOrig > totalFinal) {
             origElem.style.display = 'block';
             origElem.innerText = `${totalOrig.toFixed(3)}$`;
@@ -539,8 +579,8 @@
             finalElem.className = 'final-price no-discount';
         }
 
-        const statusContainer = document.getElementById(`status-${pIndex}`);
-        const addBtn = document.getElementById(`addBtn-${pIndex}`);
+        const statusContainer = document.getElementById(`status-${idx}`);
+        const addBtn = document.getElementById(`addBtn-${idx}`);
         const isAvailable = (String(match.available).trim() !== 'غير متوفر');
 
         if (isAvailable) {
@@ -554,13 +594,12 @@
         }
     }
 
-    function addToCart(pIndex) {
-        const list = getFilteredList();
-        const p = list[pIndex];
+    function addToCart(pKey, idx) {
+        const p = productData.find(item => item.key === pKey);
         if (!p) return;
 
-        const variantId = document.getElementById(`thick-${pIndex}`).value;
-        const qty = Math.max(1, parseInt(document.getElementById(`qty-${pIndex}`).value) || 1);
+        const variantId = document.getElementById(`thick-${idx}`).value;
+        const qty = Math.max(1, parseInt(document.getElementById(`qty-${idx}`).value) || 1);
         const match = p.variants.find(v => String(v.id) === String(variantId)) || p.variants[0];
         
         if (!match || String(match.available).trim() === 'غير متوفر') return;
