@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>مصنع صهيب للصناعات البلاستيكية | Hririplast</title>
     
-    <!-- PWA & Apple Meta -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#111111">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -56,10 +55,28 @@
             flex-direction: column;
             justify-content: space-between;
             box-shadow: 0 3px 6px rgba(0,0,0,0.04);
+            position: relative;
+        }
+
+        /* شارة نسبة الحسم */
+        .discount-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: #ef4444;
+            color: #ffffff;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+            z-index: 2;
+            display: none;
         }
 
         /* حاوية الصورة */
         .product-card .img-box {
+            position: relative;
             width: 100%;
             height: 95px;
             background: #ffffff;
@@ -215,7 +232,6 @@
         <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث عن صنف، قياس، أو كود..." oninput="onSearchInput()">
     </div>
 
-    <!-- حاوية أزرار الفلترة التلقائية -->
     <div class="filter-btns" id="filter-buttons-container">
         <button class="filter-btn active" onclick="filterProducts('الكل', this)">الكل</button>
     </div>
@@ -265,10 +281,9 @@
     }
 
     function escapeHtml(text) {
-        return String(text || '').replace(/"/g, '&quot;');
+        return String(text || '').replace(/"/g, '"');
     }
 
-    // دالة تحويل القياس (سواء كان كسراً أو رقماً عادياً) إلى قيمة عددية للمقارنة
     function parseSizeValue(val) {
         if (!val) return 0;
         const str = String(val).trim().replace(/"/g, '');
@@ -282,7 +297,6 @@
         return isNaN(parsed) ? 0 : parsed;
     }
 
-    // دالة فرز تصاعدي ذكية للقياسات
     function naturalSort(a, b) {
         const valA = parseSizeValue(a);
         const valB = parseSizeValue(b);
@@ -402,7 +416,6 @@
         }
 
         products.forEach((p, pIndex) => {
-            // فرز القياسات تصاعدياً
             const uniqueSizes = [...new Set(p.variants.map(v => String(v.size || '').trim()))]
                 .filter(s => s !== '')
                 .sort(naturalSort);
@@ -412,6 +425,7 @@
             card.innerHTML = `
                 <div>
                     <div class="img-box">
+                        <span class="discount-badge" id="discount-badge-${pIndex}"></span>
                         <img id="img-${pIndex}" src="${p.image || 'https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png'}" alt="${escapeHtml(p.name)}">
                     </div>
                     <div class="product-title">${escapeHtml(p.name)}</div>
@@ -459,7 +473,6 @@
 
         const matchingVariants = p.variants.filter(v => String(v.size || '').trim() === selectedSize);
         
-        // فرز السماكات تصاعدياً
         matchingVariants.sort((a, b) => {
             return naturalSort(a.thick, b.thick);
         });
@@ -500,6 +513,20 @@
 
         const origElem = document.getElementById(`orig-${pIndex}`);
         const finalElem = document.getElementById(`discount-${pIndex}`);
+        const discountBadge = document.getElementById(`discount-badge-${pIndex}`);
+
+        // حساب نسبة الحسم للمتغير المحدد
+        let discountPercent = 0;
+        if (match.price > match.finalPrice && match.price > 0) {
+            discountPercent = Math.round(((match.price - match.finalPrice) / match.price) * 100);
+        }
+
+        if (discountPercent > 0) {
+            discountBadge.innerText = `خصم ${discountPercent}%`;
+            discountBadge.style.display = 'block';
+        } else {
+            discountBadge.style.display = 'none';
+        }
 
         if (totalOrig > totalFinal) {
             origElem.style.display = 'block';
