@@ -76,7 +76,7 @@
     input:focus, select:focus { border-color: var(--primary); }
     input[readonly] { background-color: #f8fafc; cursor: default; }
 
-    /* تنسيق قائمة الاقتراحات المخصصة للهاتف (تكبير وتباعد لمنع الضغط بالخطأ) */
+    /* قائمة نتائج البحث بحجم مريح للهواتف وتباعد يمنع الخطأ */
     .autocomplete-list { 
       position: absolute; 
       top: 100%; 
@@ -248,6 +248,7 @@
 
   let currentPin = sessionStorage.getItem('auth_pin') || '';
   let allProducts = [];
+  let currentSearchResults = [];
   let currentMode = 'edit';
 
   if (currentPin) verifyAndUnlock(currentPin, false);
@@ -325,35 +326,36 @@
     const selectedCat = document.getElementById('filterCategory').value;
     const listDiv = document.getElementById('autocompleteList');
 
-    const filtered = allProducts.filter(p => {
+    // فلترة المنتجات مع تخزينها في مصفوفة منفصلة للحفاظ على المطابقة الدقيقة
+    currentSearchResults = allProducts.filter(p => {
       const matchCat = !selectedCat || p.type === selectedCat;
       const textToSearch = `${p.type || ''} ${p.name || ''} ${p.size || ''} ${p.thick || ''}`.toLowerCase();
       const matchQuery = textToSearch.includes(query);
       return matchCat && matchQuery;
     });
 
-    if (filtered.length === 0 || query === '') {
+    if (currentSearchResults.length === 0 || query === '') {
       listDiv.innerHTML = '';
       listDiv.style.display = 'none';
       return;
     }
 
     let html = '';
-    filtered.forEach(p => {
+    currentSearchResults.forEach((p, index) => {
       const statusBadge = (p.available === 'غير متوفر') ? ' <span style="color:var(--danger)">[❌ غير متوفر]</span>' : '';
-      const displayText = `<span><strong>[${p.type}]</strong> ${p.name} (${p.size}${p.thick ? ' - ' + p.thick : ''})</span> <span>$${p.discountPrice || p.price}${statusBadge}</span>`;
-      html += `<div class="autocomplete-item" onclick="selectProduct('${p.id}')">${displayText}</div>`;
+      const displayText = `<span><strong>[${p.type || ''}]</strong> ${p.name || ''} (${p.size || ''}${p.thick ? ' - ' + p.thick : ''})</span> <span>$${p.discountPrice || p.price || 0}${statusBadge}</span>`;
+      html += `<div class="autocomplete-item" onclick="selectProductByIndex(${index})">${displayText}</div>`;
     });
 
     listDiv.innerHTML = html;
     listDiv.style.display = 'block';
   }
 
-  function selectProduct(id) {
-    const p = allProducts.find(item => item.id == id);
+  function selectProductByIndex(index) {
+    const p = currentSearchResults[index];
     if (!p) return;
 
-    document.getElementById('searchProductInput').value = `[${p.type}] ${p.name} (${p.size})`;
+    document.getElementById('searchProductInput').value = `[${p.type || ''}] ${p.name || ''} (${p.size || ''})`;
     document.getElementById('autocompleteList').style.display = 'none';
 
     document.getElementById('pId').value = p.id || '';
@@ -450,7 +452,6 @@
         imgUrl = await uploadToCloudinary(file);
       }
 
-      // ترحيل قيمة الحسم كرقم مباشر، وعدم ترحيل السعر النهائي
       const rawDiscount = parseFloat(document.getElementById('pDiscount').value) || 0;
 
       const payload = {
