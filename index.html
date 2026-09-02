@@ -187,6 +187,7 @@
             font-size: 0.72rem;
             line-height: 1.2;
             font-weight: 600;
+            display: none; /* مخفي افتراضياً ولا يظهر إلا مع الحسم */
         }
 
         .final-price {
@@ -199,6 +200,7 @@
         .final-price.no-discount {
             color: #b45309;
             font-size: 0.9rem;
+            font-weight: bold;
         }
 
         .status-badge { display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 0.65rem; font-weight: bold; }
@@ -292,20 +294,6 @@
         return isNaN(num) ? 0 : num;
     }
 
-    // دالة استخراج نسبة الحسم كرقم عشري (0.10 بدلاً من 10%)
-    function parseDiscountRate(val) {
-        if (!val) return 0;
-        const str = String(val).trim();
-        const num = cleanNum(str);
-        if (num <= 0) return 0;
-        
-        // إذا كانت القيمة مكتوبة كنسبة مئوية صريحة أو أكبر من 1 (مثلاً 10 أو 10%)
-        if (str.includes('%') || num >= 1) {
-            return num / 100;
-        }
-        return num; // إذا كانت أصلاً 0.10
-    }
-
     function escapeHtml(text) {
         return String(text || '').replace(/"/g, '&quot;');
     }
@@ -364,19 +352,27 @@
                     grouped[key].image = item.img;
                 }
 
-                // قراءة السعر الأساسي من العمود G
+                // 1. السعر الأساسي (العمود G)
                 const basePrice = cleanNum(item.price);
 
-                // قراءة نسبة الحسم من العمود H
-                const rawH = item.discountRate !== undefined ? item.discountRate : 
-                            (item.discountPercent !== undefined ? item.discountPercent : 
-                            (item.discount !== undefined ? item.discount : 
-                            (item.colH !== undefined ? item.colH : '')));
+                // 2. السعر بعد الحسم من العمود K
+                const rawK = item.colK !== undefined ? item.colK : 
+                            (item.discountPrice !== undefined ? item.discountPrice : 
+                            (item.finalPrice !== undefined ? item.finalPrice : 
+                            (item.priceAfterDiscount !== undefined ? item.priceAfterDiscount : item.k)));
                 
-                const rate = parseDiscountRate(rawH);
+                const parsedFinalPrice = cleanNum(rawK);
 
-                // المعادلة: السعر بعد الحسم = السعر الأساسي - (السعر الأساسي * نسبة الحسم)
-                const finalP = rate > 0 ? (basePrice * (1 - rate)) : basePrice;
+                // 3. التحقق من وجود حسم فعلي
+                // إذا كان العمود K يحتوي على رقم موجب وكان أقل من السعر الأساسي
+                let finalP = basePrice;
+                let rate = 0;
+
+                if (parsedFinalPrice > 0 && parsedFinalPrice < basePrice) {
+                    finalP = parsedFinalPrice;
+                    rate = (basePrice - finalP) / basePrice;
+                }
+
                 const thickVal = String(item.thick !== undefined ? item.thick : (item.thickness !== undefined ? item.thickness : '')).trim();
 
                 grouped[key].variants.push({
@@ -384,9 +380,9 @@
                     size: String(item.size || '').trim(),
                     thick: thickVal,
                     unit: String(item.unit || '').trim(),
-                    price: basePrice,
-                    finalPrice: finalP,
-                    discountRate: rate, // نسبة الحسم كرقم عشري
+                    price: basePrice,          // السعر الأساسي
+                    finalPrice: finalP,        // السعر بعد الحسم (أو الأساسي إن لم يوجد)
+                    discountRate: rate,        // نسبة الحسم (تكون 0 إذا لم يوجد حسم)
                     available: String(item.available || 'متوفر').trim(),
                     image: item.img || grouped[key].image || ''
                 });
@@ -483,7 +479,7 @@
                         </div>
                     </div>
 
-                    <!-- الكمية ونسبة الحسم متجانبين -->
+                    <!-- الكمية ونسبة الحسم -->
                     <div class="fields-row" id="qty-discount-row-${idx}">
                         <div class="field-group fg-qty" id="qty-container-${idx}">
                             <label class="field-label">الكمية</label>
@@ -564,26 +560,30 @@
         const discountBadge = document.getElementById(`discount-badge-${idx}`);
         const qtyRow = document.getElementById(`qty-discount-row-${idx}`);
 
-        // التحقق من نسبة الحسم
-        if (match.discountRate > 0) {
+        // التحقق مما إذا كانت هناك نسبة حسم أكبر من 0
+        const hasDiscount = (match.discountRate > 0) && (totalOrig > totalFinal);
+
+        if (hasDiscount) {
+            // 1. إظهار شارة الحسم وضبط تخطيط الحقول كعمودين
             const percentDisplay = Math.round(match.discountRate * 100);
             discountBadge.innerText = `حسم ${percentDisplay}%`;
             discountWrapper.style.display = 'flex';
             qtyRow.style.gridTemplateColumns = '1fr 1fr';
-        } else {
-            discountWrapper.style.display = 'none';
-            qtyRow.style.gridTemplateColumns = '1fr';
-        }
 
-        // عرض الأسعار
-        if (totalOrig > totalFinal) {
+            // 2. إظهار السعر الأساسي مشطوباً باللون الأحمر
             origElem.style.display = 'block';
             origElem.innerText = `${totalOrig.toFixed(3)}$`;
+
+            // 3. إظهار السعر بعد الحسم باللون الأخضر
             finalElem.innerText = `${totalFinal.toFixed(3)}$`;
             finalElem.className = 'final-price';
         } else {
-            origElem.style.display = 'none';
-            finalElem.innerText = `${totalFinal.toFixed(3)}$`;
+            // في حال النسبة = 0 (لا يوجد حسم): إخفاء أي أثر للحسم تماماً
+            discountWrapper.style.display = 'none';
+            qtyRow.style.gridTemplateColumns = '1fr'; // تأخذ خانة الكمية العرض كاملاً
+
+            origElem.style.display = 'none'; // إخفاء السعر المشطوب تماماً
+            finalElem.innerText = `${totalOrig.toFixed(3)}$`; // إظهار السعر العادي فقط
             finalElem.className = 'final-price no-discount';
         }
 
@@ -632,12 +632,12 @@
             let unitPriceDisplay = '';
             let subPriceDisplay = '';
 
-            if (i.price > i.finalPrice) {
+            if (i.discountRate > 0 && i.price > i.finalPrice) {
                 unitPriceDisplay = `<span style="text-decoration: line-through; color: #ef4444; font-size: 0.65rem;">${i.price.toFixed(3)}$</span> <span style="color: #15803d; font-weight: bold;">${i.finalPrice.toFixed(3)}$</span>`;
                 subPriceDisplay = `<span style="text-decoration: line-through; color: #ef4444; font-size: 0.65rem;">${subOrig.toFixed(3)}$</span> <strong style="color: #15803d;">${subFinal.toFixed(3)}$</strong>`;
             } else {
-                unitPriceDisplay = `<span>${i.finalPrice.toFixed(3)}$</span>`;
-                subPriceDisplay = `<strong style="color: #b45309;">${subFinal.toFixed(3)}$</strong>`;
+                unitPriceDisplay = `<span>${i.price.toFixed(3)}$</span>`;
+                subPriceDisplay = `<strong style="color: #b45309;">${subOrig.toFixed(3)}$</strong>`;
             }
 
             return `<li>${escapeHtml(i.name)}${spec} | القطعة: [${unitPriceDisplay}] × ${i.qty} = ${subPriceDisplay}</li>`;
@@ -646,7 +646,7 @@
         if (totalOriginal > totalFinal) {
             document.getElementById('total-cart-price').innerHTML = `المجموع: <span style="text-decoration: line-through; color: #ef4444; font-size: 0.8rem;">${totalOriginal.toFixed(3)}$</span> <span style="color: #15803d;">${totalFinal.toFixed(3)}$</span>`;
         } else {
-            document.getElementById('total-cart-price').innerText = `المجموع: ${totalFinal.toFixed(3)}$`;
+            document.getElementById('total-cart-price').innerText = `المجموع: ${totalOriginal.toFixed(3)}$`;
         }
     }
 
@@ -672,12 +672,12 @@
             let specStr = spec ? ` (${i.size} / ${spec})` : ` (${i.size})`;
             
             msg += `• ${i.name}${specStr}%0A`;
-            if (i.price > i.finalPrice) {
+            if (i.discountRate > 0 && i.price > i.finalPrice) {
                 msg += `  سعر القطعة: ~${i.price.toFixed(3)}$~ *${i.finalPrice.toFixed(3)}$*%0A`;
                 msg += `  الكمية: ${i.qty} | الإجمالي: ~${subOrig.toFixed(3)}$~ *${subFinal.toFixed(3)}$*%0A`;
             } else {
-                msg += `  سعر القطعة: *${i.finalPrice.toFixed(3)}$*%0A`;
-                msg += `  الكمية: ${i.qty} | الإجمالي: *${subFinal.toFixed(3)}$*%0A`;
+                msg += `  سعر القطعة: *${i.price.toFixed(3)}$*%0A`;
+                msg += `  الكمية: ${i.qty} | الإجمالي: *${subOrig.toFixed(3)}$*%0A`;
             }
         });
 
@@ -686,7 +686,7 @@
             msg += `*الإجمالي قبل الحسم: ~${totalOriginal.toFixed(3)}$~*%0A`;
             msg += `*الإجمالي النهائي: ${totalFinal.toFixed(3)}$*`;
         } else {
-            msg += `*الإجمالي الكلي: ${totalFinal.toFixed(3)}$*`;
+            msg += `*الإجمالي الكلي: ${totalOriginal.toFixed(3)}$*`;
         }
 
         window.open(`https://wa.me/963941574544?text=${msg}`, '_blank');
