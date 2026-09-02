@@ -74,11 +74,40 @@
 
     input, select { width: 100%; padding: 10px 12px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; color: var(--text-main); font-size: 0.95rem; outline: none; }
     input:focus, select:focus { border-color: var(--primary); }
+    input[readonly] { background-color: #f8fafc; cursor: default; }
 
-    /* تنسيق قائمة الاقتراحات المخصصة للبحث السريع */
-    .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: #ffffff; border: 1.5px solid var(--primary); border-top: none; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
-    .autocomplete-item { padding: 10px 12px; font-size: 0.9rem; border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--text-main); }
-    .autocomplete-item:hover { background: #f0f9ff; color: var(--primary); }
+    /* تنسيق قائمة الاقتراحات المخصصة للهاتف (تكبير وتباعد لمنع الضغط بالخطأ) */
+    .autocomplete-list { 
+      position: absolute; 
+      top: 100%; 
+      left: 0; 
+      right: 0; 
+      background: #ffffff; 
+      border: 1.5px solid var(--primary); 
+      border-top: none; 
+      border-radius: 0 0 10px 10px; 
+      max-height: 260px; 
+      overflow-y: auto; 
+      z-index: 100; 
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15); 
+      display: none; 
+    }
+    .autocomplete-item { 
+      padding: 15px 14px; 
+      font-size: 1rem; 
+      line-height: 1.5;
+      border-bottom: 1px solid #e2e8f0; 
+      cursor: pointer; 
+      color: var(--text-main); 
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:active, .autocomplete-item:hover { 
+      background: #e0f2fe; 
+      color: var(--primary); 
+    }
 
     .upload-box { border: 2px dashed #94a3b8; background: #ffffff; padding: 14px; text-align: center; border-radius: 8px; cursor: pointer; color: #475569; font-size: 0.9rem; display: block; font-weight: 700; }
     .img-preview { width: 100%; max-height: 160px; object-fit: contain; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 10px; display: none; }
@@ -120,7 +149,6 @@
       <input type="hidden" id="existingImgUrl">
 
       <div class="field-card info">
-        <!-- حقول التصفية المسبقة والبحث التنبؤي -->
         <div id="selectProductGroup">
           <div class="form-group">
             <label>1. تصفية حسب التصنيف:</label>
@@ -177,20 +205,14 @@
             <input type="number" step="0.001" id="pPrice" required oninput="calcFinalPrice()">
           </div>
           <div class="form-group">
-            <label>نسبة الخصم (%)</label>
-            <input type="number" step="0.1" min="0" max="100" id="pDiscount" placeholder="مثلاً: 20" oninput="calcFinalPrice()">
+            <label>نسبة الخصم</label>
+            <input type="number" step="any" id="pDiscount" placeholder="مثلاً: 20" oninput="calcFinalPrice()">
           </div>
         </div>
 
-        <div class="grid-2">
-          <div class="form-group">
-            <label>نسبة الضريبة (%)</label>
-            <input type="number" step="0.1" min="0" max="100" id="pTax" placeholder="مثلاً: 15" oninput="calcFinalPrice()">
-          </div>
-          <div class="form-group">
-            <label>السعر النهائي بعد الحسم والضريبة ($) *</label>
-            <input type="number" step="0.001" id="pDiscountPrice" required>
-          </div>
+        <div class="form-group">
+          <label>السعر النهائي التقديري ($)</label>
+          <input type="number" step="0.001" id="pDiscountPrice" readonly placeholder="يُحسب تلقائياً">
         </div>
       </div>
 
@@ -213,7 +235,7 @@
         </div>
       </div>
 
-      <button type="submit" id="pSubmitBtn" class="submit-btn">حفظ في ورقة MHD</button>
+      <button type="submit" id="pSubmitBtn" class="submit-btn">حفظ</button>
       <div id="pStatus" class="status"></div>
     </form>
   </div>
@@ -278,13 +300,11 @@
     }
   }
 
-  // تعبئة قائمة التصنيفات آلياً بناءً على البيانات القادمة من جوجل شيت
   function populateCategoryFilter() {
     const filterSelect = document.getElementById('filterCategory');
     const currentVal = filterSelect.value;
     filterSelect.innerHTML = '<option value="">-- كل التصنيفات --</option>';
     
-    // استخراج التصنيفات الفريدة آلياً
     const categories = [...new Set(allProducts.map(p => p.type).filter(Boolean))];
     categories.sort().forEach(cat => {
       const opt = document.createElement('option');
@@ -295,19 +315,16 @@
     filterSelect.value = currentVal;
   }
 
-  // عند تغير فلتر التصنيف، إعادة ضبط حقل البحث التنبؤي
   function onCategoryFilterChange() {
     document.getElementById('searchProductInput').value = '';
     document.getElementById('autocompleteList').style.display = 'none';
   }
 
-  // تشغيل البحث التنبؤي الذكي مع مراعاة الفلتر المسبق
   function onSearchInput() {
     const query = document.getElementById('searchProductInput').value.toLowerCase().trim();
     const selectedCat = document.getElementById('filterCategory').value;
     const listDiv = document.getElementById('autocompleteList');
 
-    // فلترة المنتجات حسب التصنيف أولاً، ثم حسب مطابقة الاسم أو القياس ثانياً
     const filtered = allProducts.filter(p => {
       const matchCat = !selectedCat || p.type === selectedCat;
       const textToSearch = `${p.type || ''} ${p.name || ''} ${p.size || ''} ${p.thick || ''}`.toLowerCase();
@@ -323,8 +340,8 @@
 
     let html = '';
     filtered.forEach(p => {
-      const statusBadge = (p.available === 'غير متوفر') ? ' [❌ غير متوفر]' : '';
-      const displayText = `[${p.type}] ${p.name} (${p.size} - ${p.thick || ''}) - $${p.discountPrice}${statusBadge}`;
+      const statusBadge = (p.available === 'غير متوفر') ? ' <span style="color:var(--danger)">[❌ غير متوفر]</span>' : '';
+      const displayText = `<span><strong>[${p.type}]</strong> ${p.name} (${p.size}${p.thick ? ' - ' + p.thick : ''})</span> <span>$${p.discountPrice || p.price}${statusBadge}</span>`;
       html += `<div class="autocomplete-item" onclick="selectProduct('${p.id}')">${displayText}</div>`;
     });
 
@@ -332,7 +349,6 @@
     listDiv.style.display = 'block';
   }
 
-  // عند اختيار صنف معين من قائمة النتائج التنبؤية
   function selectProduct(id) {
     const p = allProducts.find(item => item.id == id);
     if (!p) return;
@@ -348,12 +364,10 @@
     document.getElementById('pThick').value = p.thick || '';
     document.getElementById('pUnit').value = p.unit || '';
     document.getElementById('pPrice').value = p.price || 0;
-
-    let rawDiscount = parseFloat(p.discount) || 0;
-    document.getElementById('pDiscount').value = (rawDiscount > 0 && rawDiscount <= 1) ? (rawDiscount * 100).toFixed(1).replace(/\.0$/, '') : rawDiscount;
-    document.getElementById('pTax').value = 0;
-    document.getElementById('pDiscountPrice').value = p.discountPrice || p.price || 0;
+    document.getElementById('pDiscount').value = p.discount || 0;
     document.getElementById('pAvailable').value = p.available || 'متوفر';
+
+    calcFinalPrice();
 
     const prev = document.getElementById('pPreview');
     if (p.img) {
@@ -364,7 +378,6 @@
     }
   }
 
-  // إخفاء قائمة الاقتراحات عند النقر خارجها
   document.addEventListener('click', function(e) {
     if (!e.target.closest('#selectProductGroup')) {
       const listDiv = document.getElementById('autocompleteList');
@@ -374,20 +387,14 @@
 
   function calcFinalPrice() {
     const price = parseFloat(document.getElementById('pPrice').value) || 0;
-    const discountPercent = parseFloat(document.getElementById('pDiscount').value) || 0;
-    const taxPercent = parseFloat(document.getElementById('pTax').value) || 0;
+    const discount = parseFloat(document.getElementById('pDiscount').value) || 0;
 
-    let priceAfterDiscount = price;
-    if (discountPercent > 0 && discountPercent <= 100) {
-      priceAfterDiscount = price * (1 - (discountPercent / 100));
+    let finalPrice = price;
+    if (discount > 0) {
+      finalPrice = price - (price * (discount / 100));
     }
 
-    let finalPrice = priceAfterDiscount;
-    if (taxPercent > 0) {
-      finalPrice = priceAfterDiscount * (1 + (taxPercent / 100));
-    }
-
-    document.getElementById('pDiscountPrice').value = finalPrice.toFixed(3);
+    document.getElementById('pDiscountPrice').value = finalPrice > 0 ? finalPrice.toFixed(3) : 0;
   }
 
   function setMode(mode) {
@@ -433,18 +440,18 @@
     const status = document.getElementById('pStatus');
     btn.disabled = true;
     status.style.color = 'var(--primary)';
-    status.textContent = 'جاري حفظ البيانات في ورقة MHD... ⏳';
+    status.textContent = 'جاري الحفظ... ⏳';
 
     try {
       let imgUrl = document.getElementById('existingImgUrl').value || '';
       const file = document.getElementById('pImgFile').files[0];
       if (file) {
-        status.textContent = 'جاري رفع الصورة إلى Cloudinary... ☁️';
+        status.textContent = 'جاري رفع الصورة... ☁️';
         imgUrl = await uploadToCloudinary(file);
       }
 
-      const inputDiscountPercent = parseFloat(document.getElementById('pDiscount').value) || 0;
-      const decimalDiscount = (inputDiscountPercent > 0) ? (inputDiscountPercent / 100) : 0;
+      // ترحيل قيمة الحسم كرقم مباشر، وعدم ترحيل السعر النهائي
+      const rawDiscount = parseFloat(document.getElementById('pDiscount').value) || 0;
 
       const payload = {
         pin: currentPin,
@@ -456,8 +463,7 @@
         thick: document.getElementById('pThick').value,
         unit: document.getElementById('pUnit').value,
         price: document.getElementById('pPrice').value,
-        discount: decimalDiscount,
-        discountPrice: document.getElementById('pDiscountPrice').value,
+        discount: rawDiscount,
         available: document.getElementById('pAvailable').value,
         img: imgUrl
       };
