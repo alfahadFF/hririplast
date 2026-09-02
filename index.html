@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>مصنع صهيب للصناعات البلاستيكية | Hririplast</title>
     
+    <!-- PWA & Apple Meta -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#111111">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -291,6 +292,20 @@
         return isNaN(num) ? 0 : num;
     }
 
+    // دالة استخراج نسبة الحسم كرقم عشري (0.10 بدلاً من 10%)
+    function parseDiscountRate(val) {
+        if (!val) return 0;
+        const str = String(val).trim();
+        const num = cleanNum(str);
+        if (num <= 0) return 0;
+        
+        // إذا كانت القيمة مكتوبة كنسبة مئوية صريحة أو أكبر من 1 (مثلاً 10 أو 10%)
+        if (str.includes('%') || num >= 1) {
+            return num / 100;
+        }
+        return num; // إذا كانت أصلاً 0.10
+    }
+
     function escapeHtml(text) {
         return String(text || '').replace(/"/g, '&quot;');
     }
@@ -349,16 +364,20 @@
                     grouped[key].image = item.img;
                 }
 
+                // قراءة السعر الأساسي من العمود G
                 const basePrice = cleanNum(item.price);
-                const discountP = cleanNum(item.discountPrice !== undefined ? item.discountPrice : item.discount_price);
-                const finalP = discountP > 0 ? discountP : basePrice;
-                const thickVal = String(item.thick !== undefined ? item.thick : (item.thickness !== undefined ? item.thickness : '')).trim();
 
-                // قراءة العمود H (الحسم %) الفعلي
+                // قراءة نسبة الحسم من العمود H
                 const rawH = item.discountRate !== undefined ? item.discountRate : 
                             (item.discountPercent !== undefined ? item.discountPercent : 
                             (item.discount !== undefined ? item.discount : 
                             (item.colH !== undefined ? item.colH : '')));
+                
+                const rate = parseDiscountRate(rawH);
+
+                // المعادلة: السعر بعد الحسم = السعر الأساسي - (السعر الأساسي * نسبة الحسم)
+                const finalP = rate > 0 ? (basePrice * (1 - rate)) : basePrice;
+                const thickVal = String(item.thick !== undefined ? item.thick : (item.thickness !== undefined ? item.thickness : '')).trim();
 
                 grouped[key].variants.push({
                     id: id,
@@ -367,7 +386,7 @@
                     unit: String(item.unit || '').trim(),
                     price: basePrice,
                     finalPrice: finalP,
-                    discountVal: rawH, // قيمة العمود H الأصلية
+                    discountRate: rate, // نسبة الحسم كرقم عشري
                     available: String(item.available || 'متوفر').trim(),
                     image: item.img || grouped[key].image || ''
                 });
@@ -464,7 +483,7 @@
                         </div>
                     </div>
 
-                    <!-- الكمية ونسبة الحسم من العمود H متجانبين -->
+                    <!-- الكمية ونسبة الحسم متجانبين -->
                     <div class="fields-row" id="qty-discount-row-${idx}">
                         <div class="field-group fg-qty" id="qty-container-${idx}">
                             <label class="field-label">الكمية</label>
@@ -478,6 +497,7 @@
                 </div>
 
                 <div>
+                    <!-- حاوية الأسعار -->
                     <div class="price-container">
                         <div class="original-price" id="orig-${idx}"></div>
                         <div class="final-price" id="discount-${idx}">0.000$</div>
@@ -500,11 +520,9 @@
 
         const selectedSize = String(sizeSelect.value || '').trim();
 
-        // تصفية المتغيرات التي تطابق القياس المحدد
         let matchingVariants = p.variants.filter(v => String(v.size || '').trim() === selectedSize);
         if (matchingVariants.length === 0) matchingVariants = p.variants;
 
-        // فرز السماكات تصاعدياً
         matchingVariants.sort((a, b) => naturalSort(a.thick, b.thick));
 
         thickSelect.innerHTML = '';
@@ -546,23 +564,18 @@
         const discountBadge = document.getElementById(`discount-badge-${idx}`);
         const qtyRow = document.getElementById(`qty-discount-row-${idx}`);
 
-        // فحص قيمة العمود H الفعلي
-        let rawVal = (match.discountVal !== undefined && match.discountVal !== null) ? String(match.discountVal).trim() : '';
-        let numVal = cleanNum(rawVal);
-
-        // إظهار خانة الحسم فقط إذا كانت القيمة موجودة وأكبر من صفر
-        if (rawVal !== '' && rawVal !== '0' && rawVal !== '0%' && numVal > 0) {
-            let displayVal = rawVal.includes('%') ? rawVal : `${rawVal}%`;
-            discountBadge.innerText = `حسم ${displayVal}`;
+        // التحقق من نسبة الحسم
+        if (match.discountRate > 0) {
+            const percentDisplay = Math.round(match.discountRate * 100);
+            discountBadge.innerText = `حسم ${percentDisplay}%`;
             discountWrapper.style.display = 'flex';
             qtyRow.style.gridTemplateColumns = '1fr 1fr';
         } else {
-            // إخفاء الحقل وتوسيع حقل الكمية بالكامل
             discountWrapper.style.display = 'none';
             qtyRow.style.gridTemplateColumns = '1fr';
         }
 
-        // إظهار الأسعار
+        // عرض الأسعار
         if (totalOrig > totalFinal) {
             origElem.style.display = 'block';
             origElem.innerText = `${totalOrig.toFixed(3)}$`;
