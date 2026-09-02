@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>مصنع صهيب للصناعات البلاستيكية | Hririplast</title>
     
-    <!-- PWA & Apple Meta -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#111111">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,7 +14,15 @@
     
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: #f4f6f8; padding-bottom: 270px; }
+        body { 
+            background: #f4f6f8; 
+            padding-bottom: 20px; 
+            transition: padding-bottom 0.3s ease;
+        }
+        body.has-cart {
+            padding-bottom: 260px; /* مسافة ديناميكية تظهر فقط عند وجود أصناف بالسلة */
+        }
+
         .hero { background: #111; color: white; text-align: center; }
         .hero-banner { width: 100%; max-height: 200px; object-fit: cover; }
         .logo-circle { width: 85px; height: 85px; background: white; border-radius: 50%; margin: -42px auto 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #ff9900; }
@@ -271,12 +278,27 @@
         }
         .add-btn:disabled { background: #94a3b8; cursor: not-allowed; }
 
-        /* منطقة الفاتورة والسلة */
+        /* منطقة الفاتورة والسلة (مخفية افتراضياً وتظهر بسلاسة عند الإضافة) */
         .cart-section {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: white; padding: 8px 12px;
-            border-top: 2px solid #ff9900; z-index: 2000;
-            box-shadow: 0 -4px 15px rgba(0,0,0,0.12);
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            right: 0;
+            background: white; 
+            padding: 8px 12px;
+            border-top: 2px solid #ff9900; 
+            z-index: 2000;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.15);
+            transform: translateY(110%);
+            opacity: 0;
+            visibility: hidden;
+            transition: transform 0.3s ease, opacity 0.3s ease, visibility 0.3s;
+        }
+
+        .cart-section.show {
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
         }
         
         .cart-summary-box {
@@ -368,8 +390,7 @@
     <div class="loading-state">جاري تحميل المنتجات... ⏳</div>
 </div>
 
-<!-- شريط الفاتورة / السلة -->
-<div class="cart-section">
+<div class="cart-section" id="cartSection">
     <ul id="cart-list"></ul>
     
     <div class="cart-summary-box">
@@ -413,7 +434,6 @@
 
     const DISCOUNT_OPTIONS = [0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30];
 
-    // إغلاق أي قائمة مفتوحة عند النقر خارجها
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.custom-select-box')) {
             closeAllCustomSelects();
@@ -444,7 +464,7 @@
     }
 
     function escapeHtml(text) {
-        return String(text || '').replace(/"/g, '&quot;');
+        return String(text || '').replace(/"/g, '"');
     }
 
     function parseSizeValue(val) {
@@ -595,7 +615,6 @@
                     <div class="product-title">${escapeHtml(p.name)}</div>
                     <div style="text-align:center; margin-bottom:4px;" id="status-${idx}"></div>
 
-                    <!-- القياس والسماكة بقوائم مخصصة -->
                     <div class="fields-row">
                         <div class="field-group fg-size">
                             <label class="field-label">القياس</label>
@@ -619,7 +638,6 @@
                         </div>
                     </div>
 
-                    <!-- الكمية ونسبة الحسم المخصصة -->
                     <div class="fields-row">
                         <div class="field-group fg-qty">
                             <label class="field-label">الكمية</label>
@@ -641,7 +659,6 @@
                 </div>
 
                 <div>
-                    <!-- حاوية الأسعار -->
                     <div class="price-container">
                         <div class="original-price" id="orig-${idx}"></div>
                         <div class="final-price" id="discount-${idx}">0.000$</div>
@@ -813,7 +830,20 @@
     }
 
     function updateCartList() {
+        const cartSection = document.getElementById('cartSection');
         const list = document.getElementById('cart-list');
+
+        // إخفاء أو إظهار السلة ديناميكياً بحسب احتوائها على عناصر
+        if (cart.length === 0) {
+            cartSection.classList.remove('show');
+            document.body.classList.remove('has-cart');
+            list.innerHTML = '';
+            return;
+        } else {
+            cartSection.classList.add('show');
+            document.body.classList.add('has-cart');
+        }
+
         let totalOriginal = 0;
         let totalFinal = 0;
 
