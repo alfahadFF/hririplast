@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>مصنع صهيب للصناعات البلاستيكية | Hririplast</title>
     
-    <!-- PWA & Apple Meta -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#111111">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -59,7 +58,7 @@
             position: relative;
         }
 
-        /* حاوية الصورة خالية من أي عناصر فوقها */
+        /* حاوية الصورة */
         .product-card .img-box {
             position: relative;
             width: 100%;
@@ -94,7 +93,7 @@
             line-height: 1.2;
         }
 
-        /* صفوف الحقول المتجانبة */
+        /* صف الحقول المتجانبة */
         .fields-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -102,7 +101,6 @@
             margin-bottom: 6px;
         }
 
-        /* حقول متباينة الألوان */
         .field-group {
             padding: 4px 6px;
             border-radius: 6px;
@@ -245,7 +243,6 @@
         <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث عن صنف، قياس، أو كود..." oninput="onSearchInput()">
     </div>
 
-    <!-- حاوية أزرار الفلترة التلقائية -->
     <div class="filter-btns" id="filter-buttons-container">
         <button class="filter-btn active" onclick="filterProducts('الكل', this)">الكل</button>
     </div>
@@ -314,9 +311,7 @@
     function naturalSort(a, b) {
         const valA = parseSizeValue(a);
         const valB = parseSizeValue(b);
-        if (valA !== valB) {
-            return valA - valB;
-        }
+        if (valA !== valB) return valA - valB;
         return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
     }
 
@@ -359,13 +354,11 @@
                 const finalP = discountP > 0 ? discountP : basePrice;
                 const thickVal = String(item.thick !== undefined ? item.thick : (item.thickness !== undefined ? item.thickness : '')).trim();
 
-                // قراءة القيمة الفعلية القادمة من العمود H مباشرة من الشيت
-                const rawDiscountVal = item.discountPercent !== undefined ? item.discountPercent :
-                                      (item.discountRate !== undefined ? item.discountRate :
-                                      (item.discountRateVal !== undefined ? item.discountRateVal :
-                                      (item.discount !== undefined ? item.discount :
-                                      (item.hasm !== undefined ? item.hasm :
-                                      (item.colH !== undefined ? item.colH : '')))));
+                // قراءة العمود H (الحسم %) الفعلي
+                const rawH = item.discountRate !== undefined ? item.discountRate : 
+                            (item.discountPercent !== undefined ? item.discountPercent : 
+                            (item.discount !== undefined ? item.discount : 
+                            (item.colH !== undefined ? item.colH : '')));
 
                 grouped[key].variants.push({
                     id: id,
@@ -374,7 +367,7 @@
                     unit: String(item.unit || '').trim(),
                     price: basePrice,
                     finalPrice: finalP,
-                    discountVal: rawDiscountVal, // القيمة الأصلية للعمود H
+                    discountVal: rawH, // قيمة العمود H الأصلية
                     available: String(item.available || 'متوفر').trim(),
                     image: item.img || grouped[key].image || ''
                 });
@@ -392,9 +385,7 @@
         const types = [];
         rawProducts.forEach(p => {
             const t = String(p.type || '').trim();
-            if (t && !types.includes(t)) {
-                types.push(t);
-            }
+            if (t && !types.includes(t)) types.push(t);
         });
         
         let html = `<button class="filter-btn ${currentFilter === 'الكل' ? 'active' : ''}" onclick="filterProducts('الكل', this)">الكل</button>`;
@@ -453,14 +444,13 @@
 
             card.innerHTML = `
                 <div>
-                    <!-- صورة المنتج بدون أي بادج فوقها -->
                     <div class="img-box">
                         <img id="img-${idx}" src="${p.image || 'https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png'}" alt="${escapeHtml(p.name)}">
                     </div>
                     <div class="product-title">${escapeHtml(p.name)}</div>
                     <div style="text-align:center; margin-bottom:4px;" id="status-${idx}"></div>
 
-                    <!-- السطر الأول: القياس والسماكة متجانبين -->
+                    <!-- القياس والسماكة متجانبين -->
                     <div class="fields-row">
                         <div class="field-group fg-size">
                             <label class="field-label">القياس</label>
@@ -474,7 +464,7 @@
                         </div>
                     </div>
 
-                    <!-- السطر الثاني: الكمية ونسبة الحسم من العمود H متجانبين -->
+                    <!-- الكمية ونسبة الحسم من العمود H متجانبين -->
                     <div class="fields-row" id="qty-discount-row-${idx}">
                         <div class="field-group fg-qty" id="qty-container-${idx}">
                             <label class="field-label">الكمية</label>
@@ -488,7 +478,6 @@
                 </div>
 
                 <div>
-                    <!-- حاوية الأسعار دون تغيير -->
                     <div class="price-container">
                         <div class="original-price" id="orig-${idx}"></div>
                         <div class="final-price" id="discount-${idx}">0.000$</div>
@@ -511,15 +500,15 @@
 
         const selectedSize = String(sizeSelect.value || '').trim();
 
+        // تصفية المتغيرات التي تطابق القياس المحدد
         let matchingVariants = p.variants.filter(v => String(v.size || '').trim() === selectedSize);
-        if (matchingVariants.length === 0) {
-            matchingVariants = p.variants;
-        }
-        
+        if (matchingVariants.length === 0) matchingVariants = p.variants;
+
+        // فرز السماكات تصاعدياً
         matchingVariants.sort((a, b) => naturalSort(a.thick, b.thick));
 
         thickSelect.innerHTML = '';
-        matchingVariants.forEach((v) => {
+        matchingVariants.forEach(v => {
             const opt = document.createElement('option');
             opt.value = v.id;
             let thickText = (v.thick && v.unit) ? `${v.thick} ${v.unit}` : (v.thick || v.unit || 'قياسي');
@@ -557,23 +546,23 @@
         const discountBadge = document.getElementById(`discount-badge-${idx}`);
         const qtyRow = document.getElementById(`qty-discount-row-${idx}`);
 
-        // التحقق من قيمة العمود H الفعلية من مصدر البيانات
-        let rawVal = match.discountVal !== undefined && match.discountVal !== null ? String(match.discountVal).trim() : '';
-        let cleanNumVal = cleanNum(rawVal);
+        // فحص قيمة العمود H الفعلي
+        let rawVal = (match.discountVal !== undefined && match.discountVal !== null) ? String(match.discountVal).trim() : '';
+        let numVal = cleanNum(rawVal);
 
-        // إظهار الخانة فقط إذا كانت القيمة موجودة وأكبر من صفر
-        if (rawVal !== '' && rawVal !== '0' && cleanNumVal > 0) {
-            // تنسيق العرض: إن لم تكن تحوي % نضيفها للعرض
+        // إظهار خانة الحسم فقط إذا كانت القيمة موجودة وأكبر من صفر
+        if (rawVal !== '' && rawVal !== '0' && rawVal !== '0%' && numVal > 0) {
             let displayVal = rawVal.includes('%') ? rawVal : `${rawVal}%`;
-            discountBadge.innerText = displayVal;
+            discountBadge.innerText = `حسم ${displayVal}`;
             discountWrapper.style.display = 'flex';
             qtyRow.style.gridTemplateColumns = '1fr 1fr';
         } else {
+            // إخفاء الحقل وتوسيع حقل الكمية بالكامل
             discountWrapper.style.display = 'none';
             qtyRow.style.gridTemplateColumns = '1fr';
         }
 
-        // الأسعار
+        // إظهار الأسعار
         if (totalOrig > totalFinal) {
             origElem.style.display = 'block';
             origElem.innerText = `${totalOrig.toFixed(3)}$`;
@@ -627,7 +616,6 @@
             totalFinal += subFinal;
 
             const spec = i.thick ? ` (${i.size} - ${i.thick} ${i.unit})` : ` (${i.size})`;
-            
             let unitPriceDisplay = '';
             let subPriceDisplay = '';
 
