@@ -15,7 +15,7 @@
     
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body { background: #f4f6f8; padding-bottom: 230px; }
+        body { background: #f4f6f8; padding-bottom: 270px; }
         .hero { background: #111; color: white; text-align: center; }
         .hero-banner { width: 100%; max-height: 200px; object-fit: cover; }
         .logo-circle { width: 85px; height: 85px; background: white; border-radius: 50%; margin: -42px auto 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #ff9900; }
@@ -59,7 +59,6 @@
             position: relative;
         }
 
-        /* حاوية الصورة */
         .product-card .img-box {
             position: relative;
             width: 100%;
@@ -111,41 +110,17 @@
             justify-content: center;
         }
 
-        .field-group.fg-size {
-            background: #f0f7ff;
-            border-color: #d0e5ff;
-        }
+        .field-group.fg-size { background: #f0f7ff; border-color: #d0e5ff; }
         .field-group.fg-size .field-label { color: #0369a1; }
 
-        .field-group.fg-thick {
-            background: #f0fdf4;
-            border-color: #bbf7d0;
-        }
+        .field-group.fg-thick { background: #f0fdf4; border-color: #bbf7d0; }
         .field-group.fg-thick .field-label { color: #15803d; }
 
-        .field-group.fg-qty {
-            background: #faf5ff;
-            border-color: #e9d5ff;
-        }
+        .field-group.fg-qty { background: #faf5ff; border-color: #e9d5ff; }
         .field-group.fg-qty .field-label { color: #7e22ce; }
 
-        .field-group.fg-discount {
-            background: #fef2f2;
-            border-color: #fecaca;
-        }
+        .field-group.fg-discount { background: #fef2f2; border-color: #fecaca; }
         .field-group.fg-discount .field-label { color: #dc2626; }
-
-        .discount-display {
-            background: #fee2e2;
-            color: #b91c1c;
-            border: 1px dashed #f87171;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 800;
-            text-align: center;
-            padding: 5px 2px;
-            line-height: 1.2;
-        }
 
         .field-label {
             font-size: 0.65rem;
@@ -221,13 +196,71 @@
         }
         .add-btn:disabled { background: #94a3b8; cursor: not-allowed; }
 
+        /* منطقة الفاتورة والسلة */
         .cart-section {
             position: fixed; bottom: 0; left: 0; right: 0;
-            background: white; padding: 10px 15px;
-            border-top: 2px solid #000; z-index: 1000;
-            box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+            background: white; padding: 8px 12px;
+            border-top: 2px solid #ff9900; z-index: 1000;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.12);
         }
-        .cart-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+        
+        .cart-summary-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 5px 8px;
+            margin-bottom: 6px;
+            font-size: 0.75rem;
+        }
+
+        .cart-summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2px;
+        }
+
+        .cart-summary-row.total {
+            border-top: 1px dashed #cbd5e1;
+            padding-top: 3px;
+            margin-top: 3px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #15803d;
+        }
+
+        #cart-list {
+            margin: 0 0 6px;
+            padding: 0;
+            max-height: 85px;
+            overflow-y: auto;
+            list-style: none;
+        }
+
+        .cart-item {
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 4px 6px;
+            margin-bottom: 4px;
+            font-size: 0.72rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cart-item-details { flex-grow: 1; }
+        .cart-item-remove {
+            color: #ef4444;
+            background: none;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            margin-right: 6px;
+            font-size: 0.9rem;
+        }
+
+        .cart-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 6px; }
         
         footer { background: #222; color: #fff; padding: 25px 15px; text-align: center; margin-top: 20px; font-size: 0.85rem; }
         .footer-link { background: #333; color: #fff; padding: 10px 15px; text-decoration: none; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; transition: 0.2s; }
@@ -260,15 +293,31 @@
     <div class="loading-state">جاري تحميل المنتجات... ⏳</div>
 </div>
 
+<!-- شريط الفاتورة / السلة -->
 <div class="cart-section">
-    <div id="total-cart-price" style="font-weight:bold; text-align:center; font-size:0.9rem; margin-bottom:4px;">المجموع: 0.000$</div>
-    <ul id="cart-list" style="margin:0 0 6px; padding:0; font-size:0.75rem; max-height:60px; overflow-y:auto; list-style-position: inside;"></ul>
+    <ul id="cart-list"></ul>
+    
+    <div class="cart-summary-box">
+        <div class="cart-summary-row">
+            <span>المجموع قبل الحسم:</span>
+            <span id="sum-original">0.000$</span>
+        </div>
+        <div class="cart-summary-row" style="color: #dc2626;">
+            <span>إجمالي قيمة الحسم:</span>
+            <span id="sum-discount">-0.000$</span>
+        </div>
+        <div class="cart-summary-row total">
+            <span>الصافي المطلوب:</span>
+            <span id="sum-final">0.000$</span>
+        </div>
+    </div>
+
     <div class="cart-inputs">
         <input type="text" id="cust-name" placeholder="الاسم">
         <input type="text" id="cust-phone" placeholder="الهاتف">
         <input type="text" id="cust-addr" placeholder="العنوان">
     </div>
-    <button style="width:100%; padding:10px; background:#25D366; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="sendWhatsApp()">إرسال الطلبية عبر واتساب</button>
+    <button style="width:100%; padding:9px; background:#25D366; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="sendWhatsApp()">إرسال الفاتورة عبر واتساب</button>
 </div>
 
 <footer>
@@ -287,22 +336,14 @@
     let currentFilter = 'الكل';
     let searchQuery = '';
 
+    // قائمة نسب الحسم المنسدلة
+    const DISCOUNT_OPTIONS = [0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30];
+
     function cleanNum(val) {
         if (val === undefined || val === null || val === '') return 0;
         const str = String(val).replace(/[^0-9.-]+/g, "");
         const num = parseFloat(str);
         return isNaN(num) ? 0 : num;
-    }
-
-    function parseDiscountRate(val) {
-        if (!val) return 0;
-        const str = String(val).trim();
-        const num = cleanNum(str);
-        if (num <= 0) return 0;
-        if (str.includes('%') || num >= 1) {
-            return num / 100;
-        }
-        return num;
     }
 
     function escapeHtml(text) {
@@ -363,39 +404,7 @@
                     grouped[key].image = item.img || item['الصورة'];
                 }
 
-                // 1. قراءة السعر الأساسي (العمود G)
                 const basePrice = cleanNum(item.price !== undefined ? item.price : item['السعر']);
-
-                // 2. قراءة السعر بعد الحسم من العمود K ("السعر بعد الحسم")
-                const rawK = item['السعر بعد الحسم'] !== undefined ? item['السعر بعد الحسم'] :
-                            (item.colK !== undefined ? item.colK : 
-                            (item.discountPrice !== undefined ? item.discountPrice : 
-                            (item.finalPrice !== undefined ? item.finalPrice : 
-                            (item.priceAfterDiscount !== undefined ? item.priceAfterDiscount : item.k))));
-                
-                const parsedFinalPrice = cleanNum(rawK);
-
-                // 3. قراءة نسبة الحسم (إن وجدت في العمود H)
-                const rawH = item['نسبة الحسم'] !== undefined ? item['نسبة الحسم'] :
-                            (item.discountRate !== undefined ? item.discountRate : 
-                            (item.discountPercent !== undefined ? item.discountPercent : 
-                            (item.discount !== undefined ? item.discount : 
-                            (item.colH !== undefined ? item.colH : ''))));
-                
-                let rate = parseDiscountRate(rawH);
-
-                // 4. معالجة وتحديد السعر النهائي الفعلي ونسبة الحسم
-                let finalP = basePrice;
-
-                if (parsedFinalPrice > 0 && parsedFinalPrice < basePrice) {
-                    finalP = parsedFinalPrice;
-                    if (rate <= 0 && basePrice > 0) {
-                        rate = (basePrice - finalP) / basePrice;
-                    }
-                } else if (rate > 0 && basePrice > 0) {
-                    finalP = basePrice * (1 - rate);
-                }
-
                 const thickVal = String(item.thick !== undefined ? item.thick : (item.thickness !== undefined ? item.thickness : (item['السماكة'] || ''))).trim();
 
                 grouped[key].variants.push({
@@ -404,8 +413,6 @@
                     thick: thickVal,
                     unit: String(item.unit || item['الوحدة'] || '').trim(),
                     price: basePrice,
-                    finalPrice: finalP,
-                    discountRate: rate,
                     available: String(item.available || item['الحالة'] || 'متوفر').trim(),
                     image: item.img || item['الصورة'] || grouped[key].image || ''
                 });
@@ -488,7 +495,7 @@
                     <div class="product-title">${escapeHtml(p.name)}</div>
                     <div style="text-align:center; margin-bottom:4px;" id="status-${idx}"></div>
 
-                    <!-- القياس والسماكة متجانبين -->
+                    <!-- القياس والسماكة -->
                     <div class="fields-row">
                         <div class="field-group fg-size">
                             <label class="field-label">القياس</label>
@@ -502,15 +509,17 @@
                         </div>
                     </div>
 
-                    <!-- الكمية ونسبة الحسم -->
-                    <div class="fields-row" id="qty-discount-row-${idx}">
-                        <div class="field-group fg-qty" id="qty-container-${idx}">
+                    <!-- الكمية وقائمة الحسم المنسدلة -->
+                    <div class="fields-row">
+                        <div class="field-group fg-qty">
                             <label class="field-label">الكمية</label>
                             <input type="number" id="qty-${idx}" value="1" min="1" oninput="updatePrice('${escapeHtml(p.key)}', ${idx})">
                         </div>
-                        <div class="field-group fg-discount" id="discount-wrapper-${idx}" style="display:none;">
+                        <div class="field-group fg-discount">
                             <label class="field-label">نسبة الحسم</label>
-                            <div class="discount-display" id="discount-badge-${idx}">-</div>
+                            <select id="discount-rate-${idx}" onchange="updatePrice('${escapeHtml(p.key)}', ${idx})">
+                                ${DISCOUNT_OPTIONS.map(opt => `<option value="${opt}">${opt === 0 ? 'بدون حسم' : opt + '%'}</option>`).join('')}
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -564,6 +573,10 @@
         const thickSelect = document.getElementById(`thick-${idx}`);
         const selectedVariantId = thickSelect ? thickSelect.value : '';
         const qty = Math.max(1, parseInt(document.getElementById(`qty-${idx}`).value) || 1);
+        
+        const discountSelect = document.getElementById(`discount-rate-${idx}`);
+        const selectedPercent = discountSelect ? parseFloat(discountSelect.value) || 0 : 0;
+        const discountFraction = selectedPercent / 100;
 
         let match = p.variants.find(v => String(v.id) === String(selectedVariantId));
         if (!match) {
@@ -574,33 +587,21 @@
         const targetImg = match.image || p.image || 'https://res.cloudinary.com/dvzg70krq/image/upload/q_auto/f_auto/v1781001123/logo_vwmj04.png';
         document.getElementById(`img-${idx}`).src = targetImg;
 
-        const totalOrig = match.price * qty;
-        const totalFinal = match.finalPrice * qty;
+        const unitBasePrice = match.price;
+        const unitFinalPrice = unitBasePrice * (1 - discountFraction);
+
+        const totalOrig = unitBasePrice * qty;
+        const totalFinal = unitFinalPrice * qty;
 
         const origElem = document.getElementById(`orig-${idx}`);
         const finalElem = document.getElementById(`discount-${idx}`);
-        const discountWrapper = document.getElementById(`discount-wrapper-${idx}`);
-        const discountBadge = document.getElementById(`discount-badge-${idx}`);
-        const qtyRow = document.getElementById(`qty-discount-row-${idx}`);
 
-        // شرط وجود حسم: النسبة أكبر من صفر والسعر النهائي أقل من الأصلي
-        const hasDiscount = (match.discountRate > 0) && (totalOrig > totalFinal);
-
-        if (hasDiscount) {
-            const percentDisplay = Math.round(match.discountRate * 100);
-            discountBadge.innerText = `حسم ${percentDisplay}%`;
-            discountWrapper.style.display = 'flex';
-            qtyRow.style.gridTemplateColumns = '1fr 1fr';
-
+        if (discountFraction > 0) {
             origElem.style.display = 'block';
             origElem.innerText = `${totalOrig.toFixed(3)}$`;
             finalElem.innerText = `${totalFinal.toFixed(3)}$`;
             finalElem.className = 'final-price';
         } else {
-            // لا يوجد حسم: إخفاء الشارة والسعر المشطوب بالكامل
-            discountWrapper.style.display = 'none';
-            qtyRow.style.gridTemplateColumns = '1fr';
-
             origElem.style.display = 'none';
             finalElem.innerText = `${totalOrig.toFixed(3)}$`;
             finalElem.className = 'final-price no-discount';
@@ -631,16 +632,34 @@
         
         if (!match || String(match.available).trim() === 'غير متوفر') return;
 
-        cart.push({ ...match, name: p.name, qty });
+        const discountSelect = document.getElementById(`discount-rate-${idx}`);
+        const selectedPercent = discountSelect ? parseFloat(discountSelect.value) || 0 : 0;
+        const discountRate = selectedPercent / 100;
+        const finalUnitPrice = match.price * (1 - discountRate);
+
+        cart.push({ 
+            ...match, 
+            name: p.name, 
+            qty, 
+            discountRate, 
+            discountPercent: selectedPercent,
+            finalPrice: finalUnitPrice 
+        });
+
+        updateCartList();
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
         updateCartList();
     }
 
     function updateCartList() {
         const list = document.getElementById('cart-list');
-        let totalFinal = 0;
         let totalOriginal = 0;
+        let totalFinal = 0;
 
-        list.innerHTML = cart.map(i => {
+        list.innerHTML = cart.map((i, index) => {
             const subOrig = i.price * i.qty;
             const subFinal = i.finalPrice * i.qty;
             
@@ -648,25 +667,41 @@
             totalFinal += subFinal;
 
             const spec = i.thick ? ` (${i.size} - ${i.thick} ${i.unit})` : ` (${i.size})`;
-            let unitPriceDisplay = '';
-            let subPriceDisplay = '';
-
-            if (i.discountRate > 0 && i.price > i.finalPrice) {
-                unitPriceDisplay = `<span style="text-decoration: line-through; color: #ef4444; font-size: 0.65rem;">${i.price.toFixed(3)}$</span> <span style="color: #15803d; font-weight: bold;">${i.finalPrice.toFixed(3)}$</span>`;
-                subPriceDisplay = `<span style="text-decoration: line-through; color: #ef4444; font-size: 0.65rem;">${subOrig.toFixed(3)}$</span> <strong style="color: #15803d;">${subFinal.toFixed(3)}$</strong>`;
+            
+            let priceInfo = '';
+            if (i.discountRate > 0) {
+                priceInfo = `
+                    <div>
+                        القطعة: <del style="color:#ef4444;">${i.price.toFixed(3)}$</del> <strong>${i.finalPrice.toFixed(3)}$</strong> 
+                        <span style="color:#dc2626;">(حسم ${i.discountPercent}%)</span>
+                    </div>
+                    <div>
+                        المجموع: <del style="color:#ef4444;">${subOrig.toFixed(3)}$</del> 
+                        <strong style="color:#15803d;">${subFinal.toFixed(3)}$</strong>
+                    </div>
+                `;
             } else {
-                unitPriceDisplay = `<span>${i.price.toFixed(3)}$</span>`;
-                subPriceDisplay = `<strong style="color: #b45309;">${subOrig.toFixed(3)}$</strong>`;
+                priceInfo = `
+                    <div>القطعة: ${i.price.toFixed(3)}$ (بدون حسم)</div>
+                    <div>المجموع: <strong style="color:#b45309;">${subOrig.toFixed(3)}$</strong></div>
+                `;
             }
 
-            return `<li>${escapeHtml(i.name)}${spec} | القطعة: [${unitPriceDisplay}] × ${i.qty} = ${subPriceDisplay}</li>`;
+            return `
+                <li class="cart-item">
+                    <div class="cart-item-details">
+                        <strong>${escapeHtml(i.name)}</strong>${spec} × ${i.qty}
+                        ${priceInfo}
+                    </div>
+                    <button class="cart-item-remove" title="حذف" onclick="removeFromCart(${index})">✕</button>
+                </li>
+            `;
         }).join('');
 
-        if (totalOriginal > totalFinal) {
-            document.getElementById('total-cart-price').innerHTML = `المجموع: <span style="text-decoration: line-through; color: #ef4444; font-size: 0.8rem;">${totalOriginal.toFixed(3)}$</span> <span style="color: #15803d;">${totalFinal.toFixed(3)}$</span>`;
-        } else {
-            document.getElementById('total-cart-price').innerText = `المجموع: ${totalFinal.toFixed(3)}$`;
-        }
+        const totalDiscount = totalOriginal - totalFinal;
+        document.getElementById('sum-original').innerText = `${totalOriginal.toFixed(3)}$`;
+        document.getElementById('sum-discount').innerText = `-${totalDiscount.toFixed(3)}$`;
+        document.getElementById('sum-final').innerText = `${totalFinal.toFixed(3)}$`;
     }
 
     function sendWhatsApp() {
@@ -677,36 +712,53 @@
         if(!n || !p || !a) return alert("يرجى تعبئة جميع بيانات العميل");
         if(cart.length === 0) return alert("السلة فارغة!");
         
-        let totalFinal = 0;
         let totalOriginal = 0;
-        let msg = `*طلب جديد من مصنع صهيب للصناعات البلاستيكية(Hririplast)*%0A%0Aالعميل: ${n}%0Aالهاتف: ${p}%0Aالعنوان: ${a}%0A---%0A`;
+        let totalFinal = 0;
+
+        let msg = `📄 *فاتورة طلبية - مصنع صهيب للصناعات البلاستيكية*%0A`;
+        msg += `------------------------------------------%0A`;
+        msg += `👤 *العميل:* ${n}%0A`;
+        msg += `📞 *الهاتف:* ${p}%0A`;
+        msg += `📍 *العنوان:* ${a}%0A`;
+        msg += `📅 *التاريخ:* ${new Date().toLocaleDateString('ar-EG')}%0A`;
+        msg += `------------------------------------------%0A`;
+        msg += `📦 *تفاصيل الأصناف والفاتورة:*%0A%0A`;
         
-        cart.forEach(i => { 
+        cart.forEach((i, idx) => { 
             let subOrig = i.price * i.qty; 
             let subFinal = i.finalPrice * i.qty; 
+            
             totalOriginal += subOrig; 
             totalFinal += subFinal; 
 
             let spec = i.thick ? `${i.thick} ${i.unit || ''}`.trim() : (i.unit || '');
             let specStr = spec ? ` (${i.size} / ${spec})` : ` (${i.size})`;
             
-            msg += `• ${i.name}${specStr}%0A`;
-            if (i.discountRate > 0 && i.price > i.finalPrice) {
-                msg += `  سعر القطعة: ~${i.price.toFixed(3)}$~ *${i.finalPrice.toFixed(3)}$*%0A`;
-                msg += `  الكمية: ${i.qty} | الإجمالي: ~${subOrig.toFixed(3)}$~ *${subFinal.toFixed(3)}$*%0A`;
+            msg += `*${idx + 1}. ${i.name}${specStr}*%0A`;
+            msg += `  ▫️ الكمية: ${i.qty}%0A`;
+            msg += `  ▫️ السعر الفردي: ${i.price.toFixed(3)}$%0A`;
+            
+            if (i.discountRate > 0) {
+                msg += `  ▫️ نسبة الحسم: %${i.discountPercent}%0A`;
+                msg += `  ▫️ السعر بعد الحسم: ${i.finalPrice.toFixed(3)}$%0A`;
+                msg += `  ▫️ الإجمالي قبل الحسم: ~${subOrig.toFixed(3)}$~%0A`;
+                msg += `  ▫️ الصافي بعد الحسم: *${subFinal.toFixed(3)}$*%0A`;
             } else {
-                msg += `  سعر القطعة: *${i.price.toFixed(3)}$*%0A`;
-                msg += `  الكمية: ${i.qty} | الإجمالي: *${subFinal.toFixed(3)}$*%0A`;
+                msg += `  ▫️ نسبة الحسم: لا يوجد (0%)%0A`;
+                msg += `  ▫️ الإجمالي الصافي: *${subOrig.toFixed(3)}$*%0A`;
             }
+            msg += `%0A`;
         });
 
-        msg += `%0A---%0A`;
-        if (totalOriginal > totalFinal) {
-            msg += `*الإجمالي قبل الحسم: ~${totalOriginal.toFixed(3)}$~*%0A`;
-            msg += `*الإجمالي النهائي: ${totalFinal.toFixed(3)}$*`;
-        } else {
-            msg += `*الإجمالي الكلي: ${totalFinal.toFixed(3)}$*`;
-        }
+        let totalDiscount = totalOriginal - totalFinal;
+
+        msg += `------------------------------------------%0A`;
+        msg += `📊 *ملخص الحساب المالي للفاتورة:*%0A`;
+        msg += `▪️ المجموع الإجمالي: ${totalOriginal.toFixed(3)}$%0A`;
+        msg += `▪️ إجمالي قيمة الحسم: ${totalDiscount.toFixed(3)}$%0A`;
+        msg += `💰 *الصافي المطلوب نهائياً: ${totalFinal.toFixed(3)}$*%0A`;
+        msg += `------------------------------------------%0A`;
+        msg += `شكراً لتعاملكم معنا!`;
 
         window.open(`https://wa.me/963941574544?text=${msg}`, '_blank');
     }
