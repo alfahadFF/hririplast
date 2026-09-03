@@ -17,6 +17,7 @@
       --text-muted: #64748b;
       --border: #cbd5e1;
       --danger: #ef4444;
+      --danger-hover: #dc2626;
       --success: #10b981;
       --group-info-bg: #f0f9ff;
       --group-info-border: #bae6fd;
@@ -76,7 +77,6 @@
     input:focus, select:focus { border-color: var(--primary); }
     input[readonly] { background-color: #f8fafc; cursor: default; }
 
-    /* قائمة نتائج البحث بحجم مريح للهواتف وتباعد يمنع الخطأ */
     .autocomplete-list { 
       position: absolute; 
       top: 100%; 
@@ -112,8 +112,16 @@
     .upload-box { border: 2px dashed #94a3b8; background: #ffffff; padding: 14px; text-align: center; border-radius: 8px; cursor: pointer; color: #475569; font-size: 0.9rem; display: block; font-weight: 700; }
     .img-preview { width: 100%; max-height: 160px; object-fit: contain; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 10px; display: none; }
 
-    .submit-btn { width: 100%; padding: 14px; background: var(--primary); color: #ffffff; border: none; border-radius: 10px; font-family: 'Cairo', sans-serif; font-weight: 800; font-size: 1.05rem; cursor: pointer; margin-top: 14px; }
+    /* أزرار الإجراءات */
+    .actions-row { display: flex; gap: 10px; margin-top: 14px; }
+    .submit-btn { flex: 1; padding: 14px; background: var(--primary); color: #ffffff; border: none; border-radius: 10px; font-family: 'Cairo', sans-serif; font-weight: 800; font-size: 1.05rem; cursor: pointer; transition: background 0.2s; }
+    .submit-btn:hover { background: var(--primary-hover); }
     .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .delete-btn { width: 35%; padding: 14px; background: #fee2e2; color: var(--danger); border: 1.5px solid #fca5a5; border-radius: 10px; font-family: 'Cairo', sans-serif; font-weight: 800; font-size: 1.05rem; cursor: pointer; transition: all 0.2s; }
+    .delete-btn:hover { background: var(--danger); color: #ffffff; }
+    .delete-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
     .status { text-align: center; margin-top: 12px; font-size: 0.9rem; font-weight: 700; }
     .hidden { display: none !important; }
   </style>
@@ -126,7 +134,7 @@
     <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 8px;">لوحة تحكم إدارة الأصناف</p>
     <form id="pinForm" onsubmit="handleLogin(event)">
       <input type="password" id="pinInput" class="pin-box" placeholder="••••" maxlength="8" inputmode="numeric" required autofocus>
-      <button type="submit" id="loginBtn" class="submit-btn">دخول</button>
+      <button type="submit" id="loginBtn" class="submit-btn" style="width: 100%;">دخول</button>
     </form>
     <div id="pinError" style="color: var(--danger); font-size: 0.85rem; margin-top: 10px; font-weight: bold;"></div>
   </div>
@@ -235,7 +243,12 @@
         </div>
       </div>
 
-      <button type="submit" id="pSubmitBtn" class="submit-btn">حفظ</button>
+      <!-- أزرار الإجراءات: حفظ وحذف -->
+      <div class="actions-row">
+        <button type="submit" id="pSubmitBtn" class="submit-btn">حفظ التغييرات</button>
+        <button type="button" id="pDeleteBtn" class="delete-btn hidden" onclick="deleteProduct()">🗑️ حذف</button>
+      </div>
+
       <div id="pStatus" class="status"></div>
     </form>
   </div>
@@ -326,7 +339,6 @@
     const selectedCat = document.getElementById('filterCategory').value;
     const listDiv = document.getElementById('autocompleteList');
 
-    // فلترة المنتجات مع تخزينها في مصفوفة منفصلة للحفاظ على المطابقة الدقيقة
     currentSearchResults = allProducts.filter(p => {
       const matchCat = !selectedCat || p.type === selectedCat;
       const textToSearch = `${p.type || ''} ${p.name || ''} ${p.size || ''} ${p.thick || ''}`.toLowerCase();
@@ -378,6 +390,11 @@
     } else {
       prev.style.display = 'none';
     }
+
+    // إظهار زر الحذف طالما تم اختيار صنف
+    if (currentMode === 'edit') {
+      document.getElementById('pDeleteBtn').classList.remove('hidden');
+    }
   }
 
   document.addEventListener('click', function(e) {
@@ -405,11 +422,22 @@
     document.getElementById('modeAdd').classList.toggle('active', mode === 'add');
     document.getElementById('selectProductGroup').classList.toggle('hidden', mode === 'add');
     
+    // إخفاء زر الحذف في وضع الإضافة
+    document.getElementById('pDeleteBtn').classList.add('hidden');
+    document.getElementById('pSubmitBtn').textContent = (mode === 'add') ? '➕ إضافة الصنف' : 'حفظ التغييرات';
+
+    resetFormFields();
+  }
+
+  function resetFormFields() {
     document.getElementById('productForm').reset();
     document.getElementById('pId').value = '';
     document.getElementById('existingImgUrl').value = '';
     document.getElementById('pPreview').style.display = 'none';
     document.getElementById('autocompleteList').style.display = 'none';
+    document.getElementById('searchProductInput').value = '';
+    document.getElementById('pDeleteBtn').classList.add('hidden');
+    document.getElementById('pStatus').textContent = '';
   }
 
   function previewImg(input) {
@@ -430,6 +458,60 @@
     return data.secure_url;
   }
 
+  // دالة حذف الصنف
+  async function deleteProduct() {
+    const id = document.getElementById('pId').value;
+    const name = document.getElementById('pName').value;
+    const size = document.getElementById('pSize').value;
+
+    if (!id) {
+      alert('يرجى اختيار صنف لحذفه!');
+      return;
+    }
+
+    const confirmDelete = confirm(`⚠️ هل أنت متأكد تماماً من حذف الصنف:\n"${name} (${size})"\n\nلا يمكن التراجع عن هذه الخطوة!`);
+    if (!confirmDelete) return;
+
+    const btn = document.getElementById('pDeleteBtn');
+    const submitBtn = document.getElementById('pSubmitBtn');
+    const status = document.getElementById('pStatus');
+
+    btn.disabled = true;
+    submitBtn.disabled = true;
+    status.style.color = 'var(--danger)';
+    status.textContent = 'جاري حذف الصنف... ⏳';
+
+    try {
+      const payload = {
+        pin: currentPin,
+        action: 'deleteProduct',
+        id: id
+      };
+
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (data.status === 'success') {
+        status.style.color = 'var(--success)';
+        status.textContent = '🗑️ تم حذف الصنف بنجاح!';
+        resetFormFields();
+        await loadAllData();
+      } else {
+        throw new Error(data.message || 'حدث خطأ أثناء محاولة الحذف');
+      }
+    } catch (err) {
+      status.style.color = 'var(--danger)';
+      status.textContent = '❌ خطأ: ' + err.message;
+    } finally {
+      btn.disabled = false;
+      submitBtn.disabled = false;
+    }
+  }
+
   document.getElementById('productForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -439,8 +521,11 @@
     }
 
     const btn = document.getElementById('pSubmitBtn');
+    const deleteBtn = document.getElementById('pDeleteBtn');
     const status = document.getElementById('pStatus');
+    
     btn.disabled = true;
+    deleteBtn.disabled = true;
     status.style.color = 'var(--primary)';
     status.textContent = 'جاري الحفظ... ⏳';
 
@@ -481,8 +566,7 @@
         status.textContent = '✅ ' + data.message;
         await loadAllData();
         if (currentMode === 'add') {
-          document.getElementById('productForm').reset();
-          document.getElementById('pPreview').style.display = 'none';
+          resetFormFields();
         }
       } else {
         throw new Error(data.message);
@@ -492,6 +576,7 @@
       status.textContent = '❌ خطأ: ' + err.message;
     } finally {
       btn.disabled = false;
+      deleteBtn.disabled = false;
     }
   });
 </script>
