@@ -14,6 +14,12 @@
     
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        html, body {
+            width: 100%;
+            overflow-x: hidden; /* لمنع أي انزياح أفقي أو فراغات بيضاء جانبية */
+        }
+
         body { 
             background: #f4f6f8; 
             padding-bottom: 20px; 
@@ -23,13 +29,24 @@
             padding-bottom: 260px; /* مسافة ديناميكية تظهر فقط عند وجود أصناف بالسلة */
         }
 
-        .hero { background: #111; color: white; text-align: center; }
-        .hero-banner { width: 100%; max-height: 200px; object-fit: cover; }
+        .hero { 
+            width: 100%; 
+            background: #111; 
+            color: white; 
+            text-align: center; 
+            box-sizing: border-box;
+        }
+        .hero-banner { 
+            width: 100%; 
+            max-height: 200px; 
+            object-fit: cover; 
+            display: block;
+        }
         .logo-circle { width: 85px; height: 85px; background: white; border-radius: 50%; margin: -42px auto 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #ff9900; }
         .logo-circle img { width: 80%; }
         
         /* شريط البحث */
-        .search-container { max-width: 600px; margin: 12px auto 5px; padding: 0 10px; }
+        .search-container { max-width: 600px; margin: 12px auto 5px; padding: 0 10px; width: 100%; }
         .search-box {
             width: 100%; padding: 10px 15px; border-radius: 25px; border: 1px solid #cbd5e1;
             font-size: 0.9rem; outline: none; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.03);
@@ -40,7 +57,21 @@
         .filter-btn { padding: 6px 16px; border-radius: 20px; border: 1px solid #ff9900; background: transparent; color: white; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
         .filter-btn.active { background: #ff9900; color: #000; font-weight: bold; }
 
-        .agent-container { max-width: 600px; margin: 5px auto 10px; background: white; padding: 8px 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 10px; border: 1px solid #eee; font-size: 0.85rem; }
+        .agent-container { 
+            width: calc(100% - 20px); 
+            max-width: 600px; 
+            margin: 5px auto 10px; 
+            background: white; 
+            padding: 8px 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            border: 1px solid #eee; 
+            font-size: 0.85rem; 
+            box-sizing: border-box;
+        }
         .agent-container img { height: 35px; width: auto; object-fit: contain; }
         
         /* شبكة المنتجات */
@@ -51,6 +82,7 @@
             padding: 10px;
             max-width: 900px;
             margin: 0 auto;
+            width: 100%;
         }
 
         /* بطاقة المنتج */
@@ -153,7 +185,7 @@
         }
         input:focus { border-color: #ff9900; }
 
-        /* القوائم المخصصة بديلة الـ select الأصلية */
+        /* القوائم المخصصة */
         .custom-select-box {
             position: relative;
             width: 100%;
@@ -278,7 +310,7 @@
         }
         .add-btn:disabled { background: #94a3b8; cursor: not-allowed; }
 
-        /* منطقة الفاتورة والسلة (مخفية افتراضياً وتظهر بسلاسة عند الإضافة) */
+        /* منطقة الفاتورة والسلة */
         .cart-section {
             position: fixed; 
             bottom: 0; 
@@ -359,7 +391,7 @@
 
         .cart-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 6px; }
         
-        footer { background: #222; color: #fff; padding: 25px 15px; text-align: center; margin-top: 20px; font-size: 0.85rem; }
+        footer { background: #222; color: #fff; padding: 25px 15px; text-align: center; margin-top: 20px; font-size: 0.85rem; width: 100%; }
         .footer-link { background: #333; color: #fff; padding: 10px 15px; text-decoration: none; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; transition: 0.2s; }
         .footer-link:hover { background: #444; }
         .loading-state, .error-state { text-align: center; padding: 30px; font-size: 1rem; color: #666; grid-column: span 2; }
@@ -828,7 +860,6 @@
         const discountRate = selectedPercent / 100;
         const finalUnitPrice = match.price * (1 - discountRate);
 
-        // التحقق مما إذا كان الصنف مضافاً مسبقاً بنفس القياس والسماكة ونسبة الحسم
         const existingItem = cart.find(item => 
             item.id === match.id && 
             item.size === match.size && 
@@ -836,7 +867,7 @@
         );
 
         if (existingItem) {
-            existingItem.qty += qty; // دمج وزيادة الكمية بدلاً من فتح سطر جديد
+            existingItem.qty += qty;
         } else {
             cart.push({ 
                 ...match, 
@@ -860,7 +891,6 @@
         const cartSection = document.getElementById('cartSection');
         const list = document.getElementById('cart-list');
 
-        // إخفاء أو إظهار السلة ديناميكياً
         if (cart.length === 0) {
             cartSection.classList.remove('show');
             document.body.classList.remove('has-cart');
