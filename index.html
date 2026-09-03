@@ -445,7 +445,8 @@
         document.querySelectorAll('.product-card').forEach(card => card.classList.remove('card-active'));
     }
 
-    function toggleCustomSelect(menuId, cardIdx) {
+    function toggleCustomSelect(menuId, cardIdx, e) {
+        if (e) e.stopPropagation();
         const menu = document.getElementById(menuId);
         const isOpen = menu.classList.contains('open');
         closeAllCustomSelects();
@@ -464,7 +465,12 @@
     }
 
     function escapeHtml(text) {
-        return String(text || '').replace(/"/g, '"');
+        return String(text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
     }
 
     function parseSizeValue(val) {
@@ -619,10 +625,14 @@
                         <div class="field-group fg-size">
                             <label class="field-label">القياس</label>
                             <div class="custom-select-box">
-                                <div class="custom-select-trigger" id="size-trigger-${idx}" onclick="toggleCustomSelect('size-options-${idx}', ${idx})">${firstSize}</div>
+                                <div class="custom-select-trigger" id="size-trigger-${idx}" onclick="toggleCustomSelect('size-options-${idx}', ${idx}, event)">${escapeHtml(firstSize)}</div>
                                 <div class="custom-options-menu" id="size-options-${idx}">
                                     ${uniqueSizes.map(s => `
-                                        <div class="custom-option ${s === firstSize ? 'selected' : ''}" onclick="selectCustomOption('size', '${escapeHtml(p.key)}', ${idx}, '${escapeHtml(s)}', '${escapeHtml(s)}')">${s}</div>
+                                        <div class="custom-option ${s === firstSize ? 'selected' : ''}" 
+                                             data-val="${escapeHtml(s)}" 
+                                             onclick="selectCustomOption('size', '${escapeHtml(p.key)}', ${idx}, this.getAttribute('data-val'), this.innerText, event)">
+                                             ${escapeHtml(s)}
+                                        </div>
                                     `).join('')}
                                 </div>
                                 <input type="hidden" id="size-${idx}" value="${escapeHtml(firstSize)}">
@@ -631,7 +641,7 @@
                         <div class="field-group fg-thick">
                             <label class="field-label">السماكة / الوحدة</label>
                             <div class="custom-select-box">
-                                <div class="custom-select-trigger" id="thick-trigger-${idx}" onclick="toggleCustomSelect('thick-options-${idx}', ${idx})">--</div>
+                                <div class="custom-select-trigger" id="thick-trigger-${idx}" onclick="toggleCustomSelect('thick-options-${idx}', ${idx}, event)">--</div>
                                 <div class="custom-options-menu" id="thick-options-${idx}"></div>
                                 <input type="hidden" id="thick-${idx}" value="">
                             </div>
@@ -646,10 +656,14 @@
                         <div class="field-group fg-discount">
                             <label class="field-label">نسبة الحسم</label>
                             <div class="custom-select-box">
-                                <div class="custom-select-trigger" id="discount-trigger-${idx}" onclick="toggleCustomSelect('discount-options-${idx}', ${idx})">بدون حسم</div>
+                                <div class="custom-select-trigger" id="discount-trigger-${idx}" onclick="toggleCustomSelect('discount-options-${idx}', ${idx}, event)">بدون حسم</div>
                                 <div class="custom-options-menu" id="discount-options-${idx}">
                                     ${DISCOUNT_OPTIONS.map(opt => `
-                                        <div class="custom-option ${opt === 0 ? 'selected' : ''}" onclick="selectCustomOption('discount', '${escapeHtml(p.key)}', ${idx}, '${opt}', '${opt === 0 ? 'بدون حسم' : opt + '%'}')">${opt === 0 ? 'بدون حسم' : opt + '%'}</div>
+                                        <div class="custom-option ${opt === 0 ? 'selected' : ''}" 
+                                             data-val="${opt}" 
+                                             onclick="selectCustomOption('discount', '${escapeHtml(p.key)}', ${idx}, this.getAttribute('data-val'), this.innerText, event)">
+                                             ${opt === 0 ? 'بدون حسم' : opt + '%'}
+                                        </div>
                                     `).join('')}
                                 </div>
                                 <input type="hidden" id="discount-rate-${idx}" value="0">
@@ -671,7 +685,9 @@
         });
     }
 
-    function selectCustomOption(type, pKey, idx, val, label) {
+    function selectCustomOption(type, pKey, idx, val, label, e) {
+        if (e) e.stopPropagation();
+
         if (type === 'size') {
             document.getElementById(`size-${idx}`).value = val;
             document.getElementById(`size-trigger-${idx}`).innerText = label;
@@ -726,7 +742,7 @@
             optDiv.className = `custom-option ${vIdx === 0 ? 'selected' : ''}`;
             optDiv.setAttribute('data-val', v.id);
             optDiv.innerText = thickText;
-            optDiv.onclick = () => selectCustomOption('thick', pKey, idx, v.id, thickText);
+            optDiv.onclick = (e) => selectCustomOption('thick', pKey, idx, v.id, thickText, e);
             thickMenu.appendChild(optDiv);
         });
 
@@ -812,14 +828,25 @@
         const discountRate = selectedPercent / 100;
         const finalUnitPrice = match.price * (1 - discountRate);
 
-        cart.push({ 
-            ...match, 
-            name: p.name, 
-            qty, 
-            discountRate, 
-            discountPercent: selectedPercent,
-            finalPrice: finalUnitPrice 
-        });
+        // التحقق مما إذا كان الصنف مضافاً مسبقاً بنفس القياس والسماكة ونسبة الحسم
+        const existingItem = cart.find(item => 
+            item.id === match.id && 
+            item.size === match.size && 
+            item.discountPercent === selectedPercent
+        );
+
+        if (existingItem) {
+            existingItem.qty += qty; // دمج وزيادة الكمية بدلاً من فتح سطر جديد
+        } else {
+            cart.push({ 
+                ...match, 
+                name: p.name, 
+                qty, 
+                discountRate, 
+                discountPercent: selectedPercent,
+                finalPrice: finalUnitPrice 
+            });
+        }
 
         updateCartList();
     }
@@ -833,7 +860,7 @@
         const cartSection = document.getElementById('cartSection');
         const list = document.getElementById('cart-list');
 
-        // إخفاء أو إظهار السلة ديناميكياً بحسب احتوائها على عناصر
+        // إخفاء أو إظهار السلة ديناميكياً
         if (cart.length === 0) {
             cartSection.classList.remove('show');
             document.body.classList.remove('has-cart');
@@ -878,7 +905,7 @@
             return `
                 <li class="cart-item">
                     <div class="cart-item-details">
-                        <strong>${escapeHtml(i.name)}</strong>${spec} × ${i.qty}
+                        <strong>${escapeHtml(i.name)}</strong>${escapeHtml(spec)} × ${i.qty}
                         ${priceInfo}
                     </div>
                     <button class="cart-item-remove" title="حذف" onclick="removeFromCart(${index})">✕</button>
